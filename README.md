@@ -7,6 +7,7 @@ Fork fortement modifié de [HCLonely/SG-QuickJoin](https://github.com/HCLonely/S
 
 [![Version](https://img.shields.io/github/v/release/Endymi0n74/SG-QuickJoin?label=version&style=flat-square)](https://github.com/Endymi0n74/SG-QuickJoin/releases/latest)
 [![Installer](https://img.shields.io/badge/Install%20-%20Tampermonkey-4b8bbe?style=flat-square)](https://github.com/Endymi0n74/SG-QuickJoin/releases/latest/download/SG-QuickJoin.user.js)
+[![Licence](https://img.shields.io/github/license/Endymi0n74/SG-QuickJoin?label=licence&style=flat-square)](https://github.com/Endymi0n74/SG-QuickJoin/blob/main/LICENSE)
 
 ## Installation
 
@@ -78,4 +79,5 @@ conformément aux règles du site.
 
 ## Licence
 
-MIT — fork de HCLonely/SG-QuickJoin.
+[MIT](LICENSE) — fork de [HCLonely/SG-QuickJoin](https://github.com/HCLonely/SG-QuickJoin)
+(également MIT). Licence intégrale dans le fichier `LICENSE`.

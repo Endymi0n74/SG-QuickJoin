@@ -22,7 +22,8 @@
 | `sg-quickjoin/SG-QuickJoin.user.js` | Le script (source de vérité, version `@version`) |
 | `sg-quickjoin/SG-QuickJoin.test.js` | Harnais de test Node (VM + mocks DOM/GM_*/fetch/DOMParser) |
 | `sg-quickjoin/SG-QuickJoin.meta.js` | Header seul (update check Tampermonkey) — régénérer à chaque release |
-| `sg-quickjoin/README.md` | Installation + commandes de menu + auto-update |
+| `sg-quickjoin/README.md` | Installation + commandes de menu + auto-update + badge licence |
+| `sg-quickjoin/LICENSE` | Licence MIT complète (fork + crédit original HCLonely) |
 | `sg-quickjoin/MEMO.md` | Ce mémo |
 
 ## 3. Version courante : **1.5.4**
@@ -129,3 +130,30 @@
   GitHub (l'install actuelle pointe vers GreasyFork).
 - **Processus de release** : bump `@version` → régénérer `SG-QuickJoin.meta.js`
   (`awk '/^\/\/ ==UserScript==$/{p=1} p{print} /^\/\/ ==\/UserScript==$/{p=0}' SG-QuickJoin.user.js > SG-QuickJoin.meta.js`) → tests → commit (footer Codebuff) → `git tag vX.Y.Z` → `gh release create vX.Y.Z --title "vX.Y.Z" --notes … SG-QuickJoin.user.js SG-QuickJoin.meta.js` → push.
+
+## 9. Cycle d'update Tampermonkey — vérifié avec le harnais tmtest
+
+- **Harnais** : `D:\Codex\tmtest\` — Edge + TM 5.5.0 chargé unpacked (`tm-ext`,
+  profil `profile`). Test complet : `sg-cycle-storage.js` (rétrograde la version
+  installée, déclenche le check d'update, vérifie le retour à la version release).
+  `sg-verify-install.js` vérifie l'installation + URLs. Playwright depuis
+  `D:/Codex/koharu/node_modules/playwright`.
+- **Cycle vérifié (v1.5.4)** : version installée 1.5.3 → Trigger Update (dashboard
+  TM) → TM résout `@downloadURL` → télécharge l'asset release (redirect `/latest`
+  → `v1.5.4`) → auto-install silencieux → version redevient **1.5.4**, source = la
+  release complète (65542 o). Log TM : `Script Updated: SG QuickJoin`.
+- **Piège n°1 — scripts « foisted »** : une extension TM chargée *unpacked*
+  (`--load-extension`) déclenche `chrome.runtime.onInstalled` qui marque **tous les
+  scripts existants** `evilness=12` (foisted, `G.SECURE=false` dans TM 5.5.0). Le
+  check d'update les écarte **silencieusement** (« No update found » sans fetch).
+  Fix dans le test : effacer `evilness` du record `!extdb.@meta#<uuid>`. Dans le
+  navigateur réel de l'utilisateur (TM installé depuis le store, script installé
+  après), les scripts ne sont pas foisted → l'update fonctionne sans ce fix.
+- **Piège n°2 — cache SW d'Edge** : le service worker met en cache `background.js`
+  (les edits du fichier ne sont pas relus). Après toute modification de `tm-ext`,
+  forcer `chrome.runtime.reload()` depuis le SW (fait dans `sg-cycle-storage.js`).
+- **Piège n°3 — transport du meta** : le fetch de la meta passe par un *offscreen
+  document* XHR (invisible pour `context.on('request')`) ; seuls le téléchargement
+  du `.user.js` et l'état final du stockage sont observables — c'est suffisant pour
+  prouver le cycle (la source n'est téléchargée que si la meta est plus récente).
+- L'état du profil après le test : version 1.5.4 installée, `logLevel` remis à 0.
