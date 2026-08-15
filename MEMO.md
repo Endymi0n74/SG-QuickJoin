@@ -75,7 +75,7 @@
 - Commandes du script original conservées : bouton Join/Leave, header fixe,
   `☐ 隐藏已加入的 Giveaway` (masquer les déjà inscrits).
 
-## 5. Commandes de menu (16)
+## 5. Commandes de menu (18)
 
 1. `☐/☑ Auto-join (15 min)` — toggle
 2. `Auto-join maintenant` — passage manuel (contourne heures + page liste)
@@ -124,8 +124,15 @@
 
 - v1.5.4 publiée sur GitHub (repo `Endymi0n74/SG-QuickJoin`, release tag `v1.5.4`,
   branche `main`).
-- Fichier racine `D:\Codex\SG-QuickJoin.user.js` = copie du dernier état (l'utilisateur
-  l'avait perdu une fois — **toujours sauvegarder / pousser après une session**).
+- **Page du repo complète** : `README.md` (badges version/install/licence/changelog,
+  bouton d'installation, sections auto-update + config Steam), `LICENSE` (MIT, crédit
+  original HCLonely), `CHANGELOG.md` (historique 1.1.0 → 1.5.4), `SG-QuickJoin.meta.js`.
+- **Cycle d'update TM vérifié** avec le harnais `D:\Codex\tmtest\` (cf. §9) : la meta
+  GitHub est bien détectée, l'update s'installe tout seul (test reproductible :
+  `tmtest/sg-cycle-storage.js`).
+- Fichiers racine `D:\Codex\SG-QuickJoin.user.js` + `SG-QuickJoin.test.js` = copies du
+  dernier état (synchronisées avec le repo) — l'utilisateur avait perdu le fichier une
+  fois, **toujours sauvegarder / pousser après une session**.
 - L'utilisateur installe via Tampermonkey (glisser-déposer dans le dashboard ou via la
   release). Une réinstallation manuelle finale est nécessaire pour brancher l'auto-update
   GitHub (l'install actuelle pointe vers GreasyFork).
