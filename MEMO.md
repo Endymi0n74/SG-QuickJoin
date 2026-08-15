@@ -24,6 +24,7 @@
 | `sg-quickjoin/SG-QuickJoin.meta.js` | Header seul (update check Tampermonkey) — régénérer à chaque release |
 | `sg-quickjoin/README.md` | Installation + commandes de menu + auto-update + badge licence |
 | `sg-quickjoin/LICENSE` | Licence MIT complète (fork + crédit original HCLonely) |
+| `sg-quickjoin/CHANGELOG.md` | Historique des versions (Keep a Changelog) — à mettre à jour à chaque release |
 | `sg-quickjoin/MEMO.md` | Ce mémo |
 
 ## 3. Version courante : **1.5.4**
@@ -129,7 +130,7 @@
   release). Une réinstallation manuelle finale est nécessaire pour brancher l'auto-update
   GitHub (l'install actuelle pointe vers GreasyFork).
 - **Processus de release** : bump `@version` → régénérer `SG-QuickJoin.meta.js`
-  (`awk '/^\/\/ ==UserScript==$/{p=1} p{print} /^\/\/ ==\/UserScript==$/{p=0}' SG-QuickJoin.user.js > SG-QuickJoin.meta.js`) → tests → commit (footer Codebuff) → `git tag vX.Y.Z` → `gh release create vX.Y.Z --title "vX.Y.Z" --notes … SG-QuickJoin.user.js SG-QuickJoin.meta.js` → push.
+  (`awk '/^\/\/ ==UserScript==$/{p=1} p{print} /^\/\/ ==\/UserScript==$/{p=0}' SG-QuickJoin.user.js > SG-QuickJoin.meta.js`) → **mettre à jour `CHANGELOG.md`** → tests → commit (footer Codebuff) → `git tag vX.Y.Z` → `gh release create vX.Y.Z --title "vX.Y.Z" --notes … SG-QuickJoin.user.js SG-QuickJoin.meta.js` → push.
 
 ## 9. Cycle d'update Tampermonkey — vérifié avec le harnais tmtest
 
