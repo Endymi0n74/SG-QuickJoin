@@ -12,6 +12,18 @@ Fork fortement modifié de [HCLonely/SG-QuickJoin](https://github.com/HCLonely/S
    (ou copie-colle le contenu dans un nouveau script et Ctrl+S).
 3. Va sur steamgifts.com, ouvre le menu Tampermonkey → **SG QuickJoin**.
 
+## Mise à jour & auto-update
+
+- `@updateURL` → `…/releases/latest/download/SG-QuickJoin.meta.js`
+- `@downloadURL` → `…/releases/latest/download/SG-QuickJoin.user.js`
+
+Chaque release publie les 2 assets ; Tampermonkey vérifie la `@version` via le `.meta.js`
+et met à jour automatiquement.
+
+⚠️ **Une seule réinstallation manuelle** : si ton script installé pointe encore vers
+GreasyFork (anciennes URLs `update.greasyfork.org`), réinstalle-le une fois depuis
+cette release pour brancher les nouvelles URLs — ensuite les mises à jour sont automatiques.
+
 ## Fonctionnalités principales
 
 - **Auto-join stealth** : passages réguliers avec jitter aléatoire (13-17 min par défaut,

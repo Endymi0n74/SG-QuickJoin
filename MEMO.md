@@ -21,12 +21,21 @@
 |---|---|
 | `sg-quickjoin/SG-QuickJoin.user.js` | Le script (source de vérité, version `@version`) |
 | `sg-quickjoin/SG-QuickJoin.test.js` | Harnais de test Node (VM + mocks DOM/GM_*/fetch/DOMParser) |
-| `sg-quickjoin/README.md` | Installation + liste des commandes de menu |
+| `sg-quickjoin/SG-QuickJoin.meta.js` | Header seul (update check Tampermonkey) — régénérer à chaque release |
+| `sg-quickjoin/README.md` | Installation + commandes de menu + auto-update |
 | `sg-quickjoin/MEMO.md` | Ce mémo |
 
 ## 3. Version courante : **1.5.4**
 
 - `node --check SG-QuickJoin.user.js` OK, **121 tests** au vert (`node SG-QuickJoin.test.js`).
+- **Release GitHub** : tag `v1.5.4` + 2 assets (`SG-QuickJoin.user.js` + `SG-QuickJoin.meta.js`).
+- **URLs d'update** (depuis v1.5.4) :
+  - `@updateURL` → `https://github.com/Endymi0n74/SG-QuickJoin/releases/latest/download/SG-QuickJoin.meta.js`
+  - `@downloadURL` → `https://github.com/Endymi0n74/SG-QuickJoin/releases/latest/download/SG-QuickJoin.user.js`
+- Installations pointant encore vers GreasyFork : **réinstallation manuelle une fois**
+  (note d'upgrade dans README) — ensuite auto-update TM via le `.meta.js`.
+- `@namespace` conservé `HCLonely` (continuité d'identité Tampermonkey) ; `@homepage`/
+  `@supportURL` → repo Endymi0n74.
 
 ## 4. Fonctionnalités (état 1.5.4)
 
@@ -111,7 +120,12 @@
 
 ## 8. État actuel
 
-- v1.5.4 publiée sur GitHub (repo `Endymi0n74/SG-QuickJoin`).
+- v1.5.4 publiée sur GitHub (repo `Endymi0n74/SG-QuickJoin`, release tag `v1.5.4`,
+  branche `main`).
 - Fichier racine `D:\Codex\SG-QuickJoin.user.js` = copie du dernier état (l'utilisateur
   l'avait perdu une fois — **toujours sauvegarder / pousser après une session**).
-- L'utilisateur installe via Tampermonkey (glisser-déposer dans le dashboard).
+- L'utilisateur installe via Tampermonkey (glisser-déposer dans le dashboard ou via la
+  release). Une réinstallation manuelle finale est nécessaire pour brancher l'auto-update
+  GitHub (l'install actuelle pointe vers GreasyFork).
+- **Processus de release** : bump `@version` → régénérer `SG-QuickJoin.meta.js`
+  (`awk '/^\/\/ ==UserScript==$/{p=1} p{print} /^\/\/ ==\/UserScript==$/{p=0}' SG-QuickJoin.user.js > SG-QuickJoin.meta.js`) → tests → commit (footer Codebuff) → `git tag vX.Y.Z` → `gh release create vX.Y.Z --title "vX.Y.Z" --notes … SG-QuickJoin.user.js SG-QuickJoin.meta.js` → push.
