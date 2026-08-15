@@ -5,12 +5,19 @@ Userscript Tampermonkey pour [SteamGifts.com](https://www.steamgifts.com) : bout
 
 Fork fortement modifié de [HCLonely/SG-QuickJoin](https://github.com/HCLonely/SG-QuickJoin) (MIT).
 
+[![Version](https://img.shields.io/github/v/release/Endymi0n74/SG-QuickJoin?label=version&style=flat-square)](https://github.com/Endymi0n74/SG-QuickJoin/releases/latest)
+[![Installer](https://img.shields.io/badge/Install%20-%20Tampermonkey-4b8bbe?style=flat-square)](https://github.com/Endymi0n74/SG-QuickJoin/releases/latest/download/SG-QuickJoin.user.js)
+
 ## Installation
 
-1. Ouvre **Tampermonkey → Tableau de bord**.
-2. Glisse `SG-QuickJoin.user.js` dans la fenêtre du navigateur → **Installer → OK**
-   (ou copie-colle le contenu dans un nouveau script et Ctrl+S).
-3. Va sur steamgifts.com, ouvre le menu Tampermonkey → **SG QuickJoin**.
+[![Installer avec Tampermonkey](https://img.shields.io/badge/🦎%20Installer%20avec%20Tampermonkey-4b8bbe?style=for-the-badge)](https://github.com/Endymi0n74/SG-QuickJoin/releases/latest/download/SG-QuickJoin.user.js)
+
+1. Clique le bouton ci-dessus (ou télécharge `SG-QuickJoin.user.js`) — Tampermonkey
+   affiche la page d'installation → **Installer → OK**.
+2. Va sur steamgifts.com, ouvre le menu Tampermonkey → **SG QuickJoin**.
+
+Alternative : ouvre **Tampermonkey → Tableau de bord** et glisse `SG-QuickJoin.user.js`
+dans la fenêtre du navigateur (ou copie-colle le contenu dans un nouveau script et Ctrl+S).
 
 ## Mise à jour & auto-update
 
