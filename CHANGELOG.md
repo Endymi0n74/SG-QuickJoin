@@ -5,6 +5,45 @@ Toutes les modifications notables de **SG QuickJoin** sont documentées ici.
 Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) ;
 le versionnage suit le champ `@version` du header du script.
 
+## [1.5.7] — 2026-08-21
+
+### Ajouté
+- **Indicateur permanent** (haut-droite) : pill compact affichant l'état auto-join
+  (ON/OFF/PAUSE avec dot lumineux), l'ETA de la prochaine passe et le compteur
+  journalier ; cliquable pour ouvrir un mini-menu d'actions rapides (toggle
+  auto-join, lancer un passage, simulation dry-run, rafraîchir Steam, toggle son).
+  Apparition avec slide-in (400 ms), fermeture au clic extérieur.
+
+### Changé
+- **Palette CSS extraite en custom properties** (`--sgq-*`) avec support
+  `prefers-color-scheme: light` : les composants overlay (toast, panneau,
+  indicateur) s'adaptent automatiquement au thème clair du système. Les couleurs
+  sémantiques (vert rejoint, orange filtre, bleu aujourd'hui, gris déjà inscrit)
+  sont harmonisées via les mêmes tokens sur les chips du toast, les rails du
+  panneau et les dots de l'indicateur.
+
+## [1.5.6] — 2026-08-21
+
+### Changé
+- **Panneau des exclus redesigné** : rails colorés à gauche de chaque section
+  (bleu = possédés, ambre = déjà gagnés, orange = filtres, violet = hors 24h,
+  cohérents avec les chips du toast), badge pill pour le compteur par section,
+  points colorés devant chaque item, slide-in à droite à l'apparition (350 ms,
+  cubic-bezier) et slide-down à l'ouverture de la liste (280 ms) avec caret
+  ▸/▾ qui pivote, hover des items qui les décale de 2 px vers la droite.
+
+## [1.5.5] — 2026-08-20
+
+### Changé
+- **Notification auto-join repensée** : carte colorée plus lisible avec en-tête
+  (`SG QUICKJOIN` + estimation du prochain passage + bouton ✕ pour fermer), 4 chips
+  distincts (`rejoint(s)` vert / `filtré(s)` orange / `déjà inscrit(s)` gris /
+  `aujourd'hui` bleu) et ligne d'avertissement dédiée (bibliothèque, gains, limite).
+  Toast un peu plus persistant (5 s) pour laisser le temps de lire ; fonctionne
+  aussi pour les messages d'info (simulation, vérifications, limite atteinte,
+  bibliothèque Steam, journalier) avec un rendu adapté.
+- **ETA du prochain passage** affichée dans le toast quand l'auto-join est planifié.
+
 ## [1.5.4] — 2026-08-15
 
 **Première release GitHub** (repo `Endymi0n74/SG-QuickJoin`, tag `v1.5.4`).
@@ -136,4 +175,7 @@ le versionnage suit le champ `@version` du header du script.
 - Fork du script [HCLonely/SG-QuickJoin](https://github.com/HCLonely/SG-QuickJoin)
   (MIT) : bouton « Join / Leave » sur chaque giveaway de SteamGifts.
 
+[1.5.7]: https://github.com/Endymi0n74/SG-QuickJoin/releases/tag/v1.5.7
+[1.5.6]: https://github.com/Endymi0n74/SG-QuickJoin/releases/tag/v1.5.6
+[1.5.5]: https://github.com/Endymi0n74/SG-QuickJoin/releases/tag/v1.5.5
 [1.5.4]: https://github.com/Endymi0n74/SG-QuickJoin/releases/tag/v1.5.4

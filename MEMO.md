@@ -27,10 +27,10 @@
 | `sg-quickjoin/CHANGELOG.md` | Historique des versions (Keep a Changelog) — à mettre à jour à chaque release |
 | `sg-quickjoin/MEMO.md` | Ce mémo |
 
-## 3. Version courante : **1.5.4**
+## 3. Version courante : **1.5.7**
 
 - `node --check SG-QuickJoin.user.js` OK, **121 tests** au vert (`node SG-QuickJoin.test.js`).
-- **Release GitHub** : tag `v1.5.4` + 2 assets (`SG-QuickJoin.user.js` + `SG-QuickJoin.meta.js`).
+- **Release GitHub** : tag `v1.5.7` + 2 assets (`SG-QuickJoin.user.js` + `SG-QuickJoin.meta.js`).
 - **URLs d'update** (depuis v1.5.4) :
   - `@updateURL` → `https://github.com/Endymi0n74/SG-QuickJoin/releases/latest/download/SG-QuickJoin.meta.js`
   - `@downloadURL` → `https://github.com/Endymi0n74/SG-QuickJoin/releases/latest/download/SG-QuickJoin.user.js`
@@ -60,10 +60,19 @@
   - Si une source est indisponible → le passage **continue quand même** avec un
     avertissement clair dans le toast (ne bloque jamais l'auto-join).
 - **Panneau des exclus** (bas droite) : dropdown groupé `🎮 Possédés / 🏆 Déjà gagnés /
-  🔍 Filtres / ⏳ Hors 24h`, lien vers chaque giveaway, anti-doublon par code.
-- **Notification toast** : bilan par passage (`X rejoints • Y filtrés • Z déjà inscrits
-  • N aujourd'hui`), résumé des raisons quand 0 rejoint, avertissements (bibliothèque,
-  gains, limite).
+  🔍 Filtres / ⏳ Hors 24h` avec **rails colorés** par section (bleu / ambre / orange /
+  violet, cohérents avec les chips du toast), **badge pill** de compteur par section,
+  **points colorés** devant chaque item, **slide-in** depuis la droite à la création
+  (350 ms) et **slide-down** à l'ouverture (280 ms) avec caret ▸/▾ qui pivote.
+  Hover des items : décalage 2 px vers la droite + mise en valeur du point coloré.
+  Lien vers chaque giveaway, anti-doublon par code.
+- **Notification toast** : carte colorée à 4 chips (`rejoint(s)` / `filtré(s)` /
+  `déjà inscrit(s)` / `aujourd'hui`) avec points lumineux colorés, en-tête
+  (`SG QUICKJOIN` + ETA du prochain passage + bouton ✕), ligne d'avertissement
+  dédiée (bibliothèque, gains, limite). Pour les messages d'info (simulation,
+  vérifications, bibliothèque Steam, journalier, limite) la carte utilise un rendu
+  message + warning adapté. `textContent` de la racine conserve la phrase lisible
+  historique (compatibilité tests / accessibilité).
 - **Signal son + flash** configurable (volume/type `sine|triangle|square|off`),
   uniquement quand un join a eu lieu.
 - **Compteur journalier persistant** (reset à minuit) + **historique 7 jours**
@@ -122,8 +131,11 @@
 
 ## 8. État actuel
 
-- v1.5.4 publiée sur GitHub (repo `Endymi0n74/SG-QuickJoin`, release tag `v1.5.4`,
-  branche `main`).
+- v1.5.7 prête à publier (local) — release tag `v1.5.7` à créer après commit.
+- v1.5.5 = lifting visuel du toast de bilan (cartes à chips, ETA, bouton de fermeture).
+- v1.5.6 = lifting visuel du panneau des exclus (rails colorés, badges, slide-in/out).
+- v1.5.7 = indicateur permanent (haut-droite, status pill + mini-menu) + palette
+  CSS en custom properties (`--sgq-*`) avec thème clair (`prefers-color-scheme`).
 - **Page du repo complète** : `README.md` (badges version/install/licence/changelog,
   bouton d'installation, sections auto-update + config Steam), `LICENSE` (MIT, crédit
   original HCLonely), `CHANGELOG.md` (historique 1.1.0 → 1.5.4), `SG-QuickJoin.meta.js`.

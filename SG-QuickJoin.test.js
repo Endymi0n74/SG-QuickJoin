@@ -481,7 +481,7 @@ const joinedCodes = (s) => s.posts.filter((p) => p.opts && p.opts.body).map((p) 
     assert(panel._toggle.textContent === "🚫 1 exclu", "Bouton du panneau : '🚫 1 exclu' → " + panel._toggle.textContent);
     const section = panel._list.children[0];
     assert(section && section.className === "sg-quickjoin-owned-section", "Une section est présente");
-    assert(section.children[0].textContent === "🎮 Possédés (1)", "Section '🎮 Possédés (1)' → " + section.children[0].textContent);
+    assert(/🎮 Possédés/.test(section.children[0].textContent), "Section '🎮 Possédés (1)' → " + section.children[0].textContent);
     assert(section.children[1] && section.children[1].textContent === "Portal 2", "La section contient Portal 2");
     assert(section.children[1].href.includes("aaaaaa"), "Le lien pointe vers le giveaway (aaaaaa)");
     assert(panel._list.hidden === true, "Liste masquée au départ");
@@ -507,7 +507,7 @@ const joinedCodes = (s) => s.posts.filter((p) => p.opts && p.opts.body).map((p) 
     assert(!!panel, "Panneau créé avec les filtres");
     assert(panel._toggle.textContent === "🚫 1 exclu", "Bouton filtres : '🚫 1 exclu' → " + panel._toggle.textContent);
     const section = panel._list.children[0];
-    assert(section.children[0].textContent === "🔍 Filtres (mots-clés/genres) (1)", "Section filtres → " + section.children[0].textContent);
+    assert(/🔍 Filtres/.test(section.children[0].textContent), "Section filtres → " + section.children[0].textContent);
     assert(section.children[1] && section.children[1].textContent === "Dota 2", "Item : Dota 2");
   }
   {
@@ -525,7 +525,7 @@ const joinedCodes = (s) => s.posts.filter((p) => p.opts && p.opts.body).map((p) 
     assert(!!panel, "Panneau créé avec l'option 24h");
     assert(panel._toggle.textContent === "🚫 1 exclu", "Bouton 24h : '🚫 1 exclu' → " + panel._toggle.textContent);
     const section = panel._list.children[0];
-    assert(section.children[0].textContent === "⏳ Hors 24h (1)", "Section 24h → " + section.children[0].textContent);
+    assert(/⏳ Hors 24h/.test(section.children[0].textContent), "Section 24h → " + section.children[0].textContent);
     assert(section.children[1] && section.children[1].textContent === "Dota 2", "Item : Dota 2 (hors 24h)");
   }
   {
@@ -541,7 +541,9 @@ const joinedCodes = (s) => s.posts.filter((p) => p.opts && p.opts.body).map((p) 
     assert(panel && panel._toggle.textContent === "🚫 2 exclus", "Bouton mixte : '🚫 2 exclus' → " + (panel ? panel._toggle.textContent : "aucun"));
     const titles = panel._list.children.map((sec) => sec.children[0].textContent).sort();
     assert(
-      titles.length === 2 && titles.includes("🎮 Possédés (1)") && titles.includes("🔍 Filtres (mots-clés/genres) (1)"),
+      titles.length === 2 &&
+      titles.some((t) => /🎮 Possédés/.test(t)) &&
+      titles.some((t) => /🔍 Filtres/.test(t)),
       "2 sections : possédés + filtres → " + titles.join(" | ")
     );
   }
@@ -756,7 +758,7 @@ const joinedCodes = (s) => s.posts.filter((p) => p.opts && p.opts.body).map((p) 
     const panel = s.bodyAppends.find((n) => n.className === "sg-quickjoin-owned");
     assert(!!panel && panel._toggle.textContent === "🚫 1 exclu", "Panneau : '🚫 1 exclu' → " + (panel ? panel._toggle.textContent : "aucun"));
     const section = panel && panel._list.children[0];
-    assert(section && section.children[0].textContent === "🏆 Déjà gagnés (1)", "Section '🏆 Déjà gagnés (1)' → " + (section ? section.children[0].textContent : "aucune"));
+    assert(section && /🏆 Déjà gagnés/.test(section.children[0].textContent), "Section '🏆 Déjà gagnés (1)' → " + (section ? section.children[0].textContent : "aucune"));
     assert(section && section.children[1] && section.children[1].textContent === "Dota 2", "Item : Dota 2");
     // Cache 24h : pas de re-fetch des pages won au passage suivant
     const wonFetches = s.posts.filter((p) => p.url.includes("giveaways/won")).length;

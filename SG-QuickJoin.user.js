@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name            SG QuickJoin
 // @namespace       https://github.com/HCLonely/SG-QuickJoin
-// @version         1.5.4
+// @version         1.5.7
 // @description     一个基于 Tampermonkey的用户脚本，为 SteamGifts.com上的每个抽奖添加一键"Join / Leave"按钮。
 // @description:en  Adds a 'one-click "Join / Leave"' button to each giveaway on SteamGifts
 // @author          HCLonely
@@ -27,6 +27,156 @@
 (() => {
   // src/main.ts
   GM_addStyle(`
+  /* === SG QuickJoin — Theme Tokens (dark default, light via prefers-color-scheme) === */
+  :root {
+    /* Core palette */
+    --sgq-blue: #7ba4f7;
+    --sgq-green: #5dd087;
+    --sgq-amber: #e8a860;
+    --sgq-coral: #ff8a65;
+    --sgq-violet: #b08bd6;
+    --sgq-red: #e07b7b;
+    --sgq-gray-blue: #8fa3c8;
+
+    /* Surfaces */
+    --sgq-bg: rgba(34, 39, 48, 0.96);
+    --sgq-bg-deep: rgba(28, 32, 40, 0.96);
+    --sgq-bg-toggle: rgba(30, 34, 42, 0.94);
+    --sgq-bg-hover: rgba(40, 45, 55, 0.97);
+
+    /* Text */
+    --sgq-text: #e3eaf4;
+    --sgq-text-muted: #9fb2d3;
+    --sgq-text-dim: #9aa5b8;
+    --sgq-text-brand: #c8d4ec;
+
+    /* Borders */
+    --sgq-border: rgba(123, 164, 247, 0.4);
+    --sgq-border-light: rgba(123, 164, 247, 0.35);
+    --sgq-border-strong: rgba(123, 164, 247, 0.65);
+    --sgq-border-subtle: rgba(255, 255, 255, 0.07);
+    --sgq-border-chip: rgba(255, 255, 255, 0.08);
+    --sgq-border-toggle: rgba(232, 168, 96, 0.45);
+    --sgq-border-toggle-open: rgba(232, 168, 96, 0.85);
+
+    /* Semantic: joined */
+    --sgq-joined-dot: var(--sgq-green);
+    --sgq-joined-glow: rgba(93, 208, 135, 0.6);
+    --sgq-joined-text: #c9efd4;
+
+    /* Semantic: filtered */
+    --sgq-filtered-dot: var(--sgq-amber);
+    --sgq-filtered-glow: rgba(232, 168, 96, 0.4);
+    --sgq-filtered-text: #f3d3b1;
+
+    /* Semantic: already */
+    --sgq-already-dot: var(--sgq-gray-blue);
+    --sgq-already-text: #b4c0d4;
+
+    /* Semantic: today */
+    --sgq-today-dot: var(--sgq-blue);
+    --sgq-today-glow: rgba(123, 164, 247, 0.5);
+    --sgq-today-text: #cfdcf7;
+    --sgq-today-pill-bg: rgba(123, 164, 247, 0.15);
+    --sgq-today-pill-border: rgba(123, 164, 247, 0.3);
+
+    /* Semantic: warning */
+    --sgq-warn-text: #f5d3a4;
+    --sgq-warn-bg: rgba(232, 168, 96, 0.10);
+    --sgq-warn-border: rgba(232, 168, 96, 0.32);
+
+    /* Semantic: toggle (amber accent) */
+    --sgq-toggle-text: #f0c891;
+    --sgq-toggle-text-open: #ffd6a0;
+    --sgq-toggle-glow: rgba(232, 168, 96, 0.25);
+    --sgq-toggle-glow-strong: rgba(232, 168, 96, 0.9);
+    --sgq-toggle-signal: rgba(232, 168, 96, 0.55);
+
+    /* Semantic: section rails */
+    --sgq-rail-owned: var(--sgq-blue);
+    --sgq-rail-won: var(--sgq-amber);
+    --sgq-rail-filters: var(--sgq-coral);
+    --sgq-rail-ending: var(--sgq-violet);
+    --sgq-rail-owned-bg: rgba(123, 164, 247, 0.18);
+    --sgq-rail-won-bg: rgba(232, 168, 96, 0.18);
+    --sgq-rail-filters-bg: rgba(255, 138, 101, 0.18);
+    --sgq-rail-ending-bg: rgba(176, 139, 214, 0.18);
+    --sgq-rail-owned-text: #cfdcf7;
+    --sgq-rail-won-text: #f3d3b1;
+    --sgq-rail-filters-text: #f5c4ae;
+    --sgq-rail-ending-text: #d4c0e7;
+
+    /* Misc */
+    --sgq-shadow: rgba(0, 0, 0, 0.45);
+    --sgq-shadow-soft: rgba(0, 0, 0, 0.4);
+    --sgq-shadow-strong: rgba(0, 0, 0, 0.5);
+    --sgq-indicator-dot-off: #6b7280;
+    --sgq-white: #fff;
+  }
+
+  @media (prefers-color-scheme: light) {
+    :root {
+      --sgq-bg: rgba(245, 247, 250, 0.96);
+      --sgq-bg-deep: rgba(237, 240, 244, 0.96);
+      --sgq-bg-toggle: rgba(240, 243, 247, 0.94);
+      --sgq-bg-hover: rgba(228, 232, 238, 0.97);
+
+      --sgq-text: #1e2330;
+      --sgq-text-muted: #5a6577;
+      --sgq-text-dim: #808d9e;
+      --sgq-text-brand: #3b5078;
+
+      --sgq-border: rgba(59, 80, 120, 0.30);
+      --sgq-border-light: rgba(59, 80, 120, 0.22);
+      --sgq-border-strong: rgba(59, 80, 120, 0.55);
+      --sgq-border-subtle: rgba(0, 0, 0, 0.08);
+      --sgq-border-chip: rgba(0, 0, 0, 0.10);
+      --sgq-border-toggle: rgba(180, 120, 40, 0.35);
+      --sgq-border-toggle-open: rgba(180, 120, 40, 0.60);
+
+      --sgq-joined-dot: #2d9e5c;
+      --sgq-joined-glow: rgba(45, 158, 92, 0.4);
+      --sgq-joined-text: #1a6e3a;
+
+      --sgq-filtered-dot: #c07820;
+      --sgq-filtered-glow: rgba(192, 120, 32, 0.3);
+      --sgq-filtered-text: #8a5510;
+
+      --sgq-already-dot: #607090;
+      --sgq-already-text: #4a5870;
+
+      --sgq-today-dot: #3070c0;
+      --sgq-today-glow: rgba(48, 112, 192, 0.35);
+      --sgq-today-text: #1a4a88;
+      --sgq-today-pill-bg: rgba(48, 112, 192, 0.08);
+      --sgq-today-pill-border: rgba(48, 112, 192, 0.25);
+
+      --sgq-warn-text: #8a5510;
+      --sgq-warn-bg: rgba(192, 120, 32, 0.08);
+      --sgq-warn-border: rgba(192, 120, 32, 0.25);
+
+      --sgq-toggle-text: #9a6a18;
+      --sgq-toggle-text-open: #7a5210;
+      --sgq-toggle-glow: rgba(154, 106, 24, 0.18);
+      --sgq-toggle-glow-strong: rgba(154, 106, 24, 0.40);
+      --sgq-toggle-signal: rgba(154, 106, 24, 0.35);
+
+      --sgq-rail-owned-bg: rgba(48, 112, 192, 0.12);
+      --sgq-rail-won-bg: rgba(192, 120, 32, 0.12);
+      --sgq-rail-filters-bg: rgba(200, 80, 50, 0.12);
+      --sgq-rail-ending-bg: rgba(140, 90, 180, 0.12);
+      --sgq-rail-owned-text: #1a4a88;
+      --sgq-rail-won-text: #8a5510;
+      --sgq-rail-filters-text: #983820;
+      --sgq-rail-ending-text: #6a3890;
+
+      --sgq-shadow: rgba(0, 0, 0, 0.12);
+      --sgq-shadow-soft: rgba(0, 0, 0, 0.10);
+      --sgq-shadow-strong: rgba(0, 0, 0, 0.15);
+      --sgq-indicator-dot-off: #9ca3af;
+    }
+  }
+
   .sg-quickjoin-btn {
     display: flex;
     align-items: center;
@@ -44,50 +194,50 @@
   }
 
   .sg-quickjoin-btn[data-state="idle"] {
-    background: #7ba4f7;
-    color: #fff;
+    background: var(--sgq-blue);
+    color: var(--sgq-white);
     cursor: pointer;
     border: none;
   }
 
   .sg-quickjoin-btn[data-state="loading"] {
     background: #a0a7b3;
-    color: #fff;
+    color: var(--sgq-white);
     cursor: wait;
     border: none;
   }
 
   .sg-quickjoin-btn[data-state="joined"] {
-    background: #e8a860;
-    color: #fff;
+    background: var(--sgq-amber);
+    color: var(--sgq-white);
     cursor: pointer;
     border: none;
   }
 
   .sg-quickjoin-btn[data-state="error"] {
-    background: #e07b7b;
-    color: #fff;
+    background: var(--sgq-red);
+    color: var(--sgq-white);
     cursor: pointer;
     border: none;
   }
 
   .sg-quickjoin-btn[data-state="insufficient"] {
     background: #c5cad2;
-    color: #fff;
+    color: var(--sgq-white);
     cursor: not-allowed;
     border: none;
   }
 
   .sg-quickjoin-btn[data-state="entered"] {
-    background: #e8a860;
-    color: #fff;
+    background: var(--sgq-amber);
+    color: var(--sgq-white);
     cursor: pointer;
     border: none;
   }
 
   .sg-quickjoin-btn[data-state="leaving"] {
     background: #a0a7b3;
-    color: #fff;
+    color: var(--sgq-white);
     cursor: wait;
     border: none;
   }
@@ -109,17 +259,136 @@
     left: 50%;
     transform: translateX(-50%);
     z-index: 2000;
-    background: rgba(30, 34, 42, 0.92);
-    color: #dfe6f0;
-    border: 1px solid rgba(123, 164, 247, 0.35);
-    border-radius: 6px;
-    padding: 8px 14px;
+    background: linear-gradient(180deg, var(--sgq-bg), var(--sgq-bg-deep));
+    color: var(--sgq-text);
+    border: 1px solid var(--sgq-border);
+    border-radius: 10px;
+    padding: 10px 12px 11px;
     font-size: 12px;
     font-weight: 500;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
-    pointer-events: none;
+    box-shadow: 0 6px 22px var(--sgq-shadow);
+    pointer-events: auto;
     opacity: 0;
     animation: sg-quickjoin-toast-in 0.25s ease forwards;
+    min-width: 280px;
+    max-width: 520px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    backdrop-filter: blur(4px);
+  }
+
+  .sg-quickjoin-toast-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 11px;
+  }
+
+  .sg-quickjoin-toast-brand {
+    font-weight: 700;
+    color: var(--sgq-text-brand);
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    font-size: 10px;
+  }
+
+  .sg-quickjoin-toast-eta {
+    flex: 1;
+    text-align: right;
+    font-style: italic;
+    color: var(--sgq-text-muted);
+    font-size: 11px;
+  }
+
+  .sg-quickjoin-toast-close {
+    appearance: none;
+    background: transparent;
+    border: none;
+    color: var(--sgq-text-muted);
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    padding: 1px 5px;
+    border-radius: 4px;
+    margin-left: 2px;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+
+  .sg-quickjoin-toast-close:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--sgq-text);
+  }
+
+  .sg-quickjoin-toast-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: stretch;
+  }
+
+  .sg-quickjoin-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 9px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--sgq-border-chip);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.1;
+  }
+
+  .sg-quickjoin-chip-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+  }
+
+  .sg-quickjoin-chip-count {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .sg-quickjoin-chip-label {
+    font-weight: 500;
+    color: var(--sgq-text-brand);
+  }
+
+  .sg-quickjoin-chip-joined { color: var(--sgq-joined-text); }
+  .sg-quickjoin-chip-joined .sg-quickjoin-chip-dot {
+    background: var(--sgq-joined-dot);
+    box-shadow: 0 0 8px var(--sgq-joined-glow);
+  }
+  .sg-quickjoin-chip-filtered { color: var(--sgq-filtered-text); }
+  .sg-quickjoin-chip-filtered .sg-quickjoin-chip-dot {
+    background: var(--sgq-filtered-dot);
+    box-shadow: 0 0 6px var(--sgq-filtered-glow);
+  }
+  .sg-quickjoin-chip-already { color: var(--sgq-already-text); }
+  .sg-quickjoin-chip-already .sg-quickjoin-chip-dot { background: var(--sgq-already-dot); }
+  .sg-quickjoin-chip-today { color: var(--sgq-today-text); }
+  .sg-quickjoin-chip-today .sg-quickjoin-chip-dot {
+    background: var(--sgq-today-dot);
+    box-shadow: 0 0 6px var(--sgq-today-glow);
+  }
+
+  .sg-quickjoin-toast-warning {
+    font-size: 11.5px;
+    color: var(--sgq-warn-text);
+    background: var(--sgq-warn-bg);
+    border: 1px solid var(--sgq-warn-border);
+    border-radius: 6px;
+    padding: 5px 9px;
+    line-height: 1.35;
+  }
+
+  .sg-quickjoin-toast-msg {
+    font-size: 12px;
+    color: var(--sgq-text);
+    line-height: 1.4;
   }
 
   @keyframes sg-quickjoin-toast-in {
@@ -129,89 +398,333 @@
 
   .sg-quickjoin-owned {
     position: fixed;
-    bottom: 12px;
+    bottom: 14px;
+    right: 14px;
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+  }
+
+  /* Entrée du panneau : slide-in depuis la droite + léger pop */
+  @keyframes sg-quickjoin-owned-in {
+    from { opacity: 0; transform: translateX(22px) scale(0.96); }
+    to   { opacity: 1; transform: translateX(0) scale(1); }
+  }
+  .sg-quickjoin-owned-enter {
+    animation: sg-quickjoin-owned-in 0.35s cubic-bezier(0.3, 0.7, 0.3, 1) forwards;
+  }
+
+  /* --- Bouton / toggle --- */
+  .sg-quickjoin-owned-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--sgq-bg-toggle);
+    color: var(--sgq-toggle-text);
+    border: 1px solid var(--sgq-border-toggle);
+    border-radius: 999px;
+    padding: 7px 12px 7px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 2px 10px var(--sgq-shadow-soft);
+    transition: background 0.15s ease, border-color 0.15s ease,
+                transform 0.15s ease, box-shadow 0.15s ease, color 0.15s ease;
+    font-family: inherit;
+  }
+  .sg-quickjoin-owned-toggle::after {
+    content: "\u25B8"; /* ▸ */
+    font-size: 10px;
+    line-height: 1;
+    transition: transform 0.2s ease;
+    display: inline-block;
+    color: rgba(240, 200, 145, 0.75);
+  }
+  .sg-quickjoin-owned-toggle:hover {
+    background: var(--sgq-bg-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 5px 16px var(--sgq-shadow);
+  }
+  .sg-quickjoin-owned-toggle:hover::after { transform: translateX(1px); }
+  .sg-quickjoin-owned-toggle.is-open {
+    border-color: var(--sgq-border-toggle-open);
+    color: var(--sgq-toggle-text-open);
+    background: var(--sgq-bg-hover);
+    box-shadow: 0 3px 12px var(--sgq-toggle-glow);
+  }
+  .sg-quickjoin-owned-toggle.is-open::after {
+    content: "\u25BE"; /* ▾ */
+    color: var(--sgq-toggle-text-open);
+  }
+
+  /* --- Liste déroulante --- */  .sg-quickjoin-owned-list {
+    display: none;
+    background: linear-gradient(180deg, var(--sgq-bg), var(--sgq-bg-deep));
+    color: var(--sgq-text);
+    border: 1px solid var(--sgq-border);
+    border-radius: 10px;
+    max-height: 42vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    min-width: 240px;
+    max-width: 340px;
+    box-shadow: 0 6px 22px var(--sgq-shadow);
+    transform-origin: bottom right;
+  }
+  .sg-quickjoin-owned-list.is-open {
+    display: block;
+    animation: sg-quickjoin-owned-list-in 0.28s cubic-bezier(0.3, 0.7, 0.3, 1) forwards;
+  }
+  @keyframes sg-quickjoin-owned-list-in {
+    from { opacity: 0; transform: translateY(-6px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  /* --- Sections (groupes par raison) --- */
+  .sg-quickjoin-owned-section {
+    border-top: 1px solid var(--sgq-border-subtle);
+    border-left: 3px solid transparent;
+    padding-left: 6px;
+    margin-left: -1px;
+  }
+  .sg-quickjoin-owned-section:first-child {
+    border-top: none;
+  }
+  /* Couleurs par raison (rail gauche + cohérence chips toast) */
+  .sg-quickjoin-owned-section[data-reason="owned"]   { border-left-color: var(--sgq-rail-owned); }
+  .sg-quickjoin-owned-section[data-reason="won"]     { border-left-color: var(--sgq-rail-won); }
+  .sg-quickjoin-owned-section[data-reason="filters"] { border-left-color: var(--sgq-rail-filters); }
+  .sg-quickjoin-owned-section[data-reason="ending"]  { border-left-color: var(--sgq-rail-ending); }
+
+  /* --- Titre de section (label + badge count) --- */
+  .sg-quickjoin-owned-section-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 9px 12px 4px;
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--sgq-text-brand);
+  }
+  .sg-quickjoin-owned-section-count {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 999px;
+    padding: 1px 8px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0;
+    font-variant-numeric: tabular-nums;
+    min-width: 18px;
+    text-align: center;
+    color: var(--sgq-text);
+  }
+  .sg-quickjoin-owned-section[data-reason="owned"]   .sg-quickjoin-owned-section-count { background: var(--sgq-rail-owned-bg); color: var(--sgq-rail-owned-text); }
+  .sg-quickjoin-owned-section[data-reason="won"]     .sg-quickjoin-owned-section-count { background: var(--sgq-rail-won-bg); color: var(--sgq-rail-won-text); }
+  .sg-quickjoin-owned-section[data-reason="filters"] .sg-quickjoin-owned-section-count { background: var(--sgq-rail-filters-bg); color: var(--sgq-rail-filters-text); }
+  .sg-quickjoin-owned-section[data-reason="ending"]  .sg-quickjoin-owned-section-count { background: var(--sgq-rail-ending-bg); color: var(--sgq-rail-ending-text); }
+
+  /* --- Items (liens vers chaque giveaway) --- */
+  .sg-quickjoin-owned-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px 6px 14px;
+    color: var(--sgq-text);
+    font-size: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    transition: background 0.15s ease, padding-left 0.15s ease, color 0.15s ease;
+    position: relative;
+  }
+  .sg-quickjoin-owned-item:last-child { border-bottom: none; }
+  .sg-quickjoin-owned-item::before {
+    content: "";
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.25);
+    flex-shrink: 0;
+    transition: background 0.15s ease, transform 0.15s ease;
+  }
+  .sg-quickjoin-owned-section[data-reason="owned"]   .sg-quickjoin-owned-item::before { background: var(--sgq-rail-owned); opacity: 0.7; }
+  .sg-quickjoin-owned-section[data-reason="won"]     .sg-quickjoin-owned-item::before { background: var(--sgq-rail-won); opacity: 0.8; }
+  .sg-quickjoin-owned-section[data-reason="filters"] .sg-quickjoin-owned-item::before { background: var(--sgq-rail-filters); opacity: 0.85; }
+  .sg-quickjoin-owned-section[data-reason="ending"]  .sg-quickjoin-owned-item::before { background: var(--sgq-rail-ending); opacity: 0.85; }
+  .sg-quickjoin-owned-item:hover {
+    background: rgba(123, 164, 247, 0.10);
+    padding-left: 18px;
+    color: var(--sgq-white);
+  }
+  .sg-quickjoin-owned-item:hover::before {
+    transform: scale(1.4);
+  }
+
+  /* === Indicateur permanent (haut-droite) === */
+  .sg-quickjoin-indicator {
+    position: fixed;
+    top: 56px;
     right: 12px;
     z-index: 2000;
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    gap: 4px;
+    gap: 6px;
+    pointer-events: none;
+    opacity: 0;
+    animation: sg-quickjoin-indicator-in 0.4s cubic-bezier(0.3, 0.7, 0.3, 1) 0.3s forwards;
   }
 
-  .sg-quickjoin-owned-toggle {
-    background: rgba(30, 34, 42, 0.92);
-    color: #e8a860;
-    border: 1px solid rgba(232, 168, 96, 0.4);
+  @keyframes sg-quickjoin-indicator-in {
+    from { opacity: 0; transform: translateX(20px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+
+  .sg-quickjoin-indicator-bar {
+    pointer-events: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(180deg, var(--sgq-bg), var(--sgq-bg-deep));
+    color: var(--sgq-text);
+    border: 1px solid var(--sgq-border-light);
     border-radius: 999px;
-    padding: 6px 12px;
+    padding: 5px 10px 5px 9px;
+    font-size: 11.5px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 2px 10px var(--sgq-shadow-soft);
+    transition: background 0.15s ease, border-color 0.15s ease,
+                transform 0.15s ease, box-shadow 0.15s ease;
+    font-family: inherit;
+    user-select: none;
+  }
+  .sg-quickjoin-indicator-bar:hover {
+    background: var(--sgq-bg-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px var(--sgq-shadow);
+  }
+  .sg-quickjoin-indicator-bar.is-open {
+    border-color: var(--sgq-border-strong);
+    background: var(--sgq-bg-hover);
+    box-shadow: 0 3px 12px var(--sgq-toggle-glow);
+  }
+
+  .sg-quickjoin-indicator-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--sgq-indicator-dot-off);
+    display: inline-block;
+    flex-shrink: 0;
+    transition: background 0.2s ease, box-shadow 0.2s ease;
+  }
+  .sg-quickjoin-indicator.is-on .sg-quickjoin-indicator-dot {
+    background: var(--sgq-joined-dot);
+    box-shadow: 0 0 7px var(--sgq-joined-glow);
+  }
+  .sg-quickjoin-indicator.is-paused .sg-quickjoin-indicator-dot {
+    background: var(--sgq-filtered-dot);
+    box-shadow: 0 0 6px var(--sgq-filtered-glow);
+  }
+
+  .sg-quickjoin-indicator-state {
+    color: var(--sgq-text);
+    font-weight: 700;
+    font-size: 10.5px;
+    letter-spacing: 0.3px;
+  }
+  .sg-quickjoin-indicator.is-off .sg-quickjoin-indicator-state { color: var(--sgq-text-dim); }
+  .sg-quickjoin-indicator.is-paused .sg-quickjoin-indicator-state { color: var(--sgq-toggle-text); }
+
+  .sg-quickjoin-indicator-eta {
+    font-style: italic;
+    color: var(--sgq-text-muted);
+    font-size: 10.5px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .sg-quickjoin-indicator-today {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    background: var(--sgq-today-pill-bg);
+    border: 1px solid var(--sgq-today-pill-border);
+    border-radius: 999px;
+    padding: 1px 7px 1px 6px;
+    color: var(--sgq-today-text);
+    font-variant-numeric: tabular-nums;
+    font-size: 10.5px;
+  }
+
+  .sg-quickjoin-indicator-menu {
+    pointer-events: auto;
+    display: none;
+    flex-direction: column;
+    gap: 1px;
+    background: linear-gradient(180deg, var(--sgq-bg), var(--sgq-bg-deep));
+    border: 1px solid var(--sgq-border);
+    border-radius: 10px;
+    padding: 4px;
+    min-width: 230px;
+    box-shadow: 0 6px 22px var(--sgq-shadow-strong);
+    transform-origin: top right;
+  }
+  .sg-quickjoin-indicator-menu.is-open {
+    display: flex;
+    animation: sg-quickjoin-indicator-menu-in 0.25s cubic-bezier(0.3, 0.7, 0.3, 1) forwards;
+  }
+
+  @keyframes sg-quickjoin-indicator-menu-in {
+    from { opacity: 0; transform: translateY(-6px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .sg-quickjoin-indicator-item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 6px 10px;
+    background: transparent;
+    border: none;
+    color: var(--sgq-text);
     font-size: 12px;
     font-weight: 500;
+    text-align: left;
+    border-radius: 6px;
     cursor: pointer;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+    font-family: inherit;
+    transition: background 0.15s ease, color 0.15s ease, padding-left 0.15s ease;
   }
-
-  .sg-quickjoin-owned-toggle:hover {
-    background: rgba(40, 45, 55, 0.95);
+  .sg-quickjoin-indicator-item:hover {
+    background: rgba(123, 164, 247, 0.14);
+    color: var(--sgq-white);
+    padding-left: 13px;
   }
-
-  .sg-quickjoin-owned-list {
-    background: rgba(30, 34, 42, 0.95);
-    color: #dfe6f0;
-    border: 1px solid rgba(123, 164, 247, 0.35);
-    border-radius: 8px;
-    max-height: 40vh;
-    overflow-y: auto;
-    min-width: 220px;
-    max-width: 320px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+  .sg-quickjoin-indicator-item-icon {
+    width: 18px;
+    font-size: 13px;
+    text-align: center;
+    opacity: 0.85;
+    flex-shrink: 0;
   }
-
-  .sg-quickjoin-owned-list[hidden] {
-    display: none;
-  }
-
-  .sg-quickjoin-owned-item {
-    display: block;
-    padding: 6px 12px;
-    color: #dfe6f0;
-    text-decoration: none;
-    font-size: 12px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  }
-
-  .sg-quickjoin-owned-item:last-child {
-    border-bottom: none;
-  }
-
-  .sg-quickjoin-owned-item:hover {
-    background: rgba(123, 164, 247, 0.15);
-  }
-
-  .sg-quickjoin-owned-section {
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-  }
-
-  .sg-quickjoin-owned-section:first-child {
-    border-top: none;
-  }
-
-  .sg-quickjoin-owned-section-title {
-    padding: 6px 12px 2px;
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: #8fa3c8;
+  .sg-quickjoin-indicator-item[disabled] {
+    opacity: 0.4;
+    cursor: not-allowed;
   }
 
   .sg-quickjoin-toast.sg-quickjoin-toast-signal {
-    border-color: rgba(232, 168, 96, 0.9);
+    border-color: var(--sgq-toggle-glow-strong);
     animation: sg-quickjoin-toast-in 0.25s ease forwards, sg-quickjoin-signal 0.6s ease 2;
   }
 
   @keyframes sg-quickjoin-signal {
-    0%, 100% { box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35); }
-    50% { box-shadow: 0 0 18px 3px rgba(232, 168, 96, 0.55); }
+    0%, 100% { box-shadow: 0 2px 10px var(--sgq-shadow-soft); }
+    50% { box-shadow: 0 0 18px 3px var(--sgq-toggle-signal); }
   }
 `);
   function extractCode(href) {
@@ -895,6 +1408,7 @@
     if (!excludedPanel) {
       excludedPanel = document.createElement("div");
       excludedPanel.className = "sg-quickjoin-owned";
+      excludedPanel.classList.add("sg-quickjoin-owned-enter");
       const toggle = document.createElement("button");
       toggle.type = "button";
       toggle.className = "sg-quickjoin-owned-toggle";
@@ -906,6 +1420,7 @@
       toggle.addEventListener("click", () => {
         list.hidden = !list.hidden;
         toggle.classList.toggle("is-open", !list.hidden);
+        list.classList.toggle("is-open", !list.hidden);
       });
       document.body.appendChild(excludedPanel);
       excludedPanel._toggle = toggle;
@@ -919,9 +1434,14 @@
       if (!items.length) continue;
       const section = document.createElement("div");
       section.className = "sg-quickjoin-owned-section";
+      section.dataset.reason = group.reason;
       const title = document.createElement("div");
       title.className = "sg-quickjoin-owned-section-title";
-      title.textContent = group.label + " (" + items.length + ")";
+      title.textContent = group.label;
+      const countBadge = document.createElement("span");
+      countBadge.className = "sg-quickjoin-owned-section-count";
+      countBadge.textContent = " (" + items.length + ")";
+      title.appendChild(countBadge);
       section.appendChild(title);
       for (const g of items) {
         const item = document.createElement("a");
@@ -1036,15 +1556,169 @@
   }
 
   // === Notification discrète en haut de page ===
-  var TOAST_DURATION_MS = 4000;
+  var TOAST_DURATION_MS = 5000;
   var activeToast = null;
+  var nextAutoJoinAt = null; // timestamp (Date.now() base) du prochain passage programmé
+  function formatNextPassEta() {
+    if (nextAutoJoinAt == null) return "";
+    const remainingMs = nextAutoJoinAt - Date.now();
+    if (remainingMs < 30000) return ""; // < 30 s : pas d'ETA utile (passage imminent)
+    const minutes = Math.max(1, Math.round(remainingMs / 60000));
+    return "Prochain passage dans ~" + minutes + " min";
+  }
+
+  // === Indicateur permanent (haut-droite) : état + ETA + compteur du jour + menu d'actions ===
+  var indicator = null;
+  var indicatorMenuOpen = false;
+  function isIndicatorPaused() {
+    if (!isAutoJoinEnabled()) return false; // OFF est son propre état, pas un "pause"
+    if (isAutoJoinListOnlyEnabled() && !isGiveawaysListPage()) return true;
+    if (isActiveHoursEnabled() && !isWithinActiveHours()) return true;
+    if (getDailyJoinLimit() > 0 && getDailyCount() >= getDailyJoinLimit()) return true;
+    return false;
+  }
+  function toggleAutoJoinFromIndicator() {
+    const next = !isAutoJoinEnabled();
+    setAutoJoinEnabled(next);
+    if (next) {
+      runAutoJoin();
+      startAutoJoinTimer();
+    } else {
+      stopAutoJoinTimer();
+    }
+    registerAutoJoinMenu();
+    renderIndicator();
+  }
+  function toggleSignalFromIndicator() {
+    GM_setValue(SIGNAL_ENABLED_KEY, !isSignalEnabled());
+    registerSignalMenu();
+    renderIndicator();
+  }
+  function buildIndicator() {
+    if (indicator) return;
+    indicator = document.createElement("div");
+    indicator.className = "sg-quickjoin-indicator";
+
+    // --- Barre (cliquable) ---
+    const bar = document.createElement("button");
+    bar.type = "button";
+    bar.className = "sg-quickjoin-indicator-bar";
+    const dot = document.createElement("span");
+    dot.className = "sg-quickjoin-indicator-dot";
+    const state = document.createElement("span");
+    state.className = "sg-quickjoin-indicator-state";
+    const etaSpan = document.createElement("span");
+    etaSpan.className = "sg-quickjoin-indicator-eta";
+    const today = document.createElement("span");
+    today.className = "sg-quickjoin-indicator-today";
+    bar.appendChild(dot);
+    bar.appendChild(state);
+    bar.appendChild(etaSpan);
+    bar.appendChild(today);
+    bar.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleIndicatorMenu();
+    });
+
+    // --- Mini-menu d'actions rapides ---
+    const menu = document.createElement("div");
+    menu.className = "sg-quickjoin-indicator-menu";
+    const items = [
+      { id: "toggle", icon: "\u23FB", defaultLabel: "Auto-join", action: toggleAutoJoinFromIndicator },
+      { id: "now",    icon: "\u25B6", defaultLabel: "Lancer un passage maintenant", action: () => runAutoJoin(true) },
+      { id: "sim",    icon: "\uD83D\uDD0D", defaultLabel: "Simuler un passage (dry-run)", action: () => runAutoJoin(true, true) },
+      { id: "refresh", icon: "\u21BB", defaultLabel: "Rafraîchir bibliothèque + gains", action: refreshSteamCaches },
+      { id: "sound",  icon: "\uD83D\uDD14", defaultLabel: "Son à chaque join", action: toggleSignalFromIndicator }
+    ];
+    const itemsById = {};
+    for (const it of items) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "sg-quickjoin-indicator-item";
+      btn.dataset.id = it.id;
+      const icon = document.createElement("span");
+      icon.className = "sg-quickjoin-indicator-item-icon";
+      icon.textContent = it.icon;
+      const lbl = document.createElement("span");
+      lbl.className = "sg-quickjoin-indicator-item-label";
+      lbl.textContent = it.defaultLabel;
+      btn.appendChild(icon);
+      btn.appendChild(lbl);
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        it.action();
+        closeIndicatorMenu();
+        renderIndicator();
+      });
+      menu.appendChild(btn);
+      itemsById[it.id] = { ...it, node: btn, labelNode: lbl };
+    }
+    menu._items = itemsById;
+
+    indicator.appendChild(bar);
+    indicator.appendChild(menu);
+    document.body.appendChild(indicator);
+
+    indicator._bar = bar;
+    indicator._menu = menu;
+    indicator._dot = dot;
+    indicator._state = state;
+    indicator._eta = etaSpan;
+    indicator._today = today;
+
+    // Click-outside (ferme le menu si on clique ailleurs)
+    document.addEventListener("click", (e) => {
+      if (indicatorMenuOpen && indicator && !indicator.contains(e.target)) {
+        closeIndicatorMenu();
+      }
+    });
+    // Repositionne si la fenêtre change de taille (header height)
+    window.addEventListener("resize", positionIndicator);
+
+    positionIndicator();
+    renderIndicator();
+  }
+  function positionIndicator() {
+    if (!indicator) return;
+    const header = document.querySelector("header");
+    const h = header && header.offsetHeight ? header.offsetHeight : 48;
+    indicator.style.top = (h + 8) + "px";
+    indicator.style.right = "12px";
+  }
+  function renderIndicator() {
+    if (!indicator) return;
+    const on = isAutoJoinEnabled();
+    const paused = on && isIndicatorPaused();
+    indicator.classList.toggle("is-on", on && !paused);
+    indicator.classList.toggle("is-off", !on);
+    indicator.classList.toggle("is-paused", on && paused);
+    indicator._state.textContent = !on ? "OFF" : paused ? "PAUSE" : "ON";
+    indicator._eta.textContent = formatNextPassEta() || "";
+    indicator._today.textContent = "\uD83D\uDCC5 " + getDailyCount();
+    const items = indicator._menu._items;
+    if (items.toggle) {
+      items.toggle.labelNode.textContent = "Auto-join : " + (on ? "ON" : "OFF") + " (cliquer pour " + (on ? "désactiver" : "activer") + ")";
+    }
+    if (items.sound) {
+      items.sound.labelNode.textContent = "Son à chaque join : " + (isSignalEnabled() ? "ON" : "OFF");
+    }
+  }
+  function toggleIndicatorMenu() {
+    indicatorMenuOpen ? closeIndicatorMenu() : openIndicatorMenu();
+  }
+  function openIndicatorMenu() {
+    if (!indicator) return;
+    indicator._menu.classList.add("is-open");
+    indicator._bar.classList.add("is-open");
+    indicatorMenuOpen = true;
+  }
+  function closeIndicatorMenu() {
+    if (!indicator) return;
+    indicator._menu.classList.remove("is-open");
+    indicator._bar.classList.remove("is-open");
+    indicatorMenuOpen = false;
+  }
   function showAutoJoinToast(joinedCount, filteredCount, alreadyCount, customMessage, warningText) {
-    const plural = (n, s) => s + (n > 1 ? "s" : "");
-    const base = "SG QuickJoin — " + joinedCount + " " + plural(joinedCount, "rejoint") +
-      " • " + filteredCount + " " + plural(filteredCount, "filtré") +
-      " • " + alreadyCount + " " + plural(alreadyCount, "déjà inscrit") +
-      " • " + getDailyCount() + " aujourd'hui";
-    const message = customMessage || (warningText ? base + " — " + warningText : base);
     const header = document.querySelector("header");
     const top = header ? header.offsetHeight + 10 : 10;
     if (activeToast) {
@@ -1055,7 +1729,91 @@
     const toast = document.createElement("div");
     toast.className = "sg-quickjoin-toast";
     toast.style.top = top + "px";
-    toast.textContent = message;
+    toast.setAttribute("role", "status");
+    toast.setAttribute("aria-live", "polite");
+
+    // --- En-tête (marque + ETA + bouton de fermeture) ---
+    const head = document.createElement("div");
+    head.className = "sg-quickjoin-toast-head";
+
+    const brand = document.createElement("span");
+    brand.className = "sg-quickjoin-toast-brand";
+    brand.textContent = "SG QuickJoin";
+    head.appendChild(brand);
+
+    const etaText = formatNextPassEta();
+    if (etaText) {
+      const eta = document.createElement("span");
+      eta.className = "sg-quickjoin-toast-eta";
+      eta.textContent = etaText;
+      head.appendChild(eta);
+    }
+
+    const close = document.createElement("button");
+    close.className = "sg-quickjoin-toast-close";
+    close.type = "button";
+    close.setAttribute("aria-label", "Fermer la notification");
+    close.textContent = "\u2715";
+    close.addEventListener("click", () => {
+      if (toast._timer) window.clearTimeout(toast._timer);
+      toast.remove();
+      if (activeToast === toast) activeToast = null;
+    });
+    head.appendChild(close);
+    toast.appendChild(head);
+
+    // --- Contenu : chips pour le bilan, ligne simple pour les messages d'info ---
+    const plural = (n, s) => s + (n > 1 ? "s" : "");
+    const isSummary = !customMessage;
+    let readableText = "";
+    if (isSummary) {
+      const chips = document.createElement("div");
+      chips.className = "sg-quickjoin-toast-chips";
+      const items = [
+        { cls: "sg-quickjoin-chip-joined",   n: joinedCount,        label: plural(joinedCount, "rejoint") },
+        { cls: "sg-quickjoin-chip-filtered", n: filteredCount,      label: plural(filteredCount, "filtré") },
+        { cls: "sg-quickjoin-chip-already",  n: alreadyCount,       label: plural(alreadyCount, "déjà inscrit") },
+        { cls: "sg-quickjoin-chip-today",    n: getDailyCount(),    label: "aujourd'hui" }
+      ];
+      const summaryParts = [];
+      for (const item of items) {
+        const chip = document.createElement("span");
+        chip.className = "sg-quickjoin-chip " + item.cls;
+        const dot = document.createElement("span");
+        dot.className = "sg-quickjoin-chip-dot";
+        const count = document.createElement("span");
+        count.className = "sg-quickjoin-chip-count";
+        count.textContent = String(item.n);
+        const lbl = document.createElement("span");
+        lbl.className = "sg-quickjoin-chip-label";
+        lbl.textContent = " " + item.label;
+        chip.appendChild(dot);
+        chip.appendChild(count);
+        chip.appendChild(lbl);
+        chips.appendChild(chip);
+        summaryParts.push(item.n + " " + item.label);
+      }
+      toast.appendChild(chips);
+      readableText = "SG QuickJoin — " + summaryParts.join(" • ");
+    } else if (customMessage) {
+      const msg = document.createElement("div");
+      msg.className = "sg-quickjoin-toast-msg";
+      msg.textContent = customMessage;
+      toast.appendChild(msg);
+      readableText = customMessage;
+    }
+
+    if (warningText) {
+      const warning = document.createElement("div");
+      warning.className = "sg-quickjoin-toast-warning";
+      warning.textContent = "⚠ " + warningText;
+      toast.appendChild(warning);
+      readableText = readableText ? (readableText + " — " + warningText) : warningText;
+    }
+
+    // textContent sur la racine : sert de fallback lisible (lecteurs d'écran, tests existants)
+    toast.textContent = readableText;
+
     if (joinedCount > 0 && isSignalEnabled()) {
       toast.classList.add("sg-quickjoin-toast-signal");
       playJoinSound();
@@ -1426,6 +2184,7 @@
       }
     } finally {
       isAutoJoinPassInProgress = false;
+      renderIndicator();
     }
   }
 
@@ -1436,41 +2195,52 @@
     if (getDailyJoinLimit() > 0 && getDailyCount() >= getDailyJoinLimit()) {
       const now = new Date();
       const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 5).getTime();
+      nextAutoJoinAt = midnight; // reprise après minuit
       autoJoinTimer = window.setTimeout(() => {
         autoJoinTimer = null;
+        nextAutoJoinAt = null;
         runAutoJoin(false).finally(() => {
           if (isAutoJoinEnabled()) {
             scheduleNextAutoJoinPass();
           }
         });
       }, Math.max(60000, midnight - Date.now()));
+      renderIndicator();
       return;
     }
     const { minMs, maxMs } = getIntervalRangeMs();
     const jitterMs = minMs + Math.random() * (maxMs - minMs);
+    nextAutoJoinAt = Date.now() + jitterMs;
     autoJoinTimer = window.setTimeout(() => {
       autoJoinTimer = null;
+      nextAutoJoinAt = null;
       runAutoJoin(false).finally(() => {
         if (isAutoJoinEnabled()) {
           scheduleNextAutoJoinPass();
         }
       });
     }, jitterMs);
+    renderIndicator();
   }
   function startAutoJoinTimer() {
     if (autoJoinTimer) return;
     // Hors page de liste : l'auto-join reste en veille sur cette page (le timer ne démarre pas)
     if (isAutoJoinListOnlyEnabled() && !isGiveawaysListPage()) {
       console.info("[SG-QuickJoin] Page hors liste giveaways : auto-join en veille (il reprendra sur une page de liste)");
+      nextAutoJoinAt = null;
+      renderIndicator();
       return;
     }
+    nextAutoJoinAt = Date.now() + 5000; // premier passage rapide après chargement
     window.setTimeout(() => runAutoJoin(false), 5000); // premier passage rapide après chargement
     scheduleNextAutoJoinPass();
   }
   function stopAutoJoinTimer() {
+    nextAutoJoinAt = null;
     if (!autoJoinTimer) return;
     window.clearTimeout(autoJoinTimer);
     autoJoinTimer = null;
+    renderIndicator();
   }
 
   function registerAutoJoinMenu() {
@@ -1489,6 +2259,7 @@
       } else {
         stopAutoJoinTimer();
       }
+      renderIndicator();
     });
   }
   registerAutoJoinMenu();
@@ -1621,7 +2392,7 @@
   registerOwnedMenu();
 
   // Rafraîchit les deux caches (bibliothèque Steam + historique des gains) à la demande
-  GM_registerMenuCommand("Rafraîchir bibliothèque + gains (Steam)", async () => {
+  async function refreshSteamCaches() {
     GM_setValue(OWNED_FETCHED_KEY, 0);
     GM_setValue(WON_FETCHED_KEY, 0);
     const owned = await getOwnedGamesSet();
@@ -1631,7 +2402,9 @@
     parts.push(won ? "gagnés: " + won.size + " jeux" : "gagnés: indisponible");
     console.info("[SG-QuickJoin] Vérifications rafraîchies:", parts.join(" | "));
     showAutoJoinToast(0, 0, 0, "SG QuickJoin — vérifications : " + parts.join(" | "));
-  });
+    renderIndicator();
+  }
+  GM_registerMenuCommand("Rafraîchir bibliothèque + gains (Steam)", refreshSteamCaches);
 
   // Une seule commande : clé API + SteamID + rechargement immédiat (moins de boutons)
   GM_registerMenuCommand("Steam: configurer (clé API + ID)", async () => {
@@ -1666,6 +2439,7 @@
     signalMenuId = GM_registerMenuCommand(caption, () => {
       GM_setValue(SIGNAL_ENABLED_KEY, !enabled);
       registerSignalMenu();
+      renderIndicator();
     });
   }
   registerSignalMenu();
@@ -1723,6 +2497,7 @@
   function main() {
     fixHeader();
     showMore();
+    buildIndicator(); // indicateur permanent (haut-droite) — visible avant même le rendu des giveaways
     applyHideJoinedSetting(GM_getValue(HIDE_JOINED_KEY, false));
     // SteamID64 : détection automatique depuis la page (aucune saisie nécessaire)
     if (!getSteamConfig().steamId) {
