@@ -1,10 +1,10 @@
 // ==UserScript==
-// @name            SG QuickJoin
-// @namespace       https://github.com/HCLonely/SG-QuickJoin
-// @version         1.5.9
-// @description     一个基于 Tampermonkey的用户脚本，为 SteamGifts.com上的每个抽奖添加一键"Join / Leave"按钮。
-// @description:en  Adds a 'one-click "Join / Leave"' button to each giveaway on SteamGifts
-// @author          HCLonely
+// @name            SG Quick Join SE
+// @namespace       https://github.com/Endymi0n74/SG-QuickJoin
+// @version         1.0.0
+// @description     Auto-join stealth pour SteamGifts.com — indicateur permanent, filtres, exclusion jeux possédés.
+// @description:en  Stealth auto-join for SteamGifts.com — permanent indicator, filters, owned-game exclusion.
+// @author          HCLonely (fork Endymi0n74)
 // @match           https://www.steamgifts.com/*
 // @license         MIT
 // @tag             games
@@ -12,8 +12,6 @@
 // @supportURL      https://github.com/Endymi0n74/SG-QuickJoin/issues
 // @icon            https://github.com/HCLonely/SG-QuickJoin/blob/main/icon.ico?raw=true
 // @grant           GM_addStyle
-// @grant           GM_registerMenuCommand
-// @grant           GM_unregisterMenuCommand
 // @grant           GM_setValue
 // @grant           GM_getValue
 // @grant           GM_xmlhttpRequest
@@ -1126,19 +1124,7 @@
     if (!pinnedGiveawaysText) return;
     pinnedGiveawaysText.innerText = "Show Fewer";
   }
-  var menuCommandId;
-  function registerHideJoinedMenu() {
-    if (menuCommandId) {
-      GM_unregisterMenuCommand(menuCommandId);
-    }
-    const isHidden = GM_getValue(HIDE_JOINED_KEY, false);
-    const caption = isHidden ? "☑ 显示已加入的 Giveaway" : "☐ 隐藏已加入的 Giveaway";
-    menuCommandId = GM_registerMenuCommand(caption, () => {
-      toggleHideJoined();
-      registerHideJoinedMenu();
-    });
-  }
-  registerHideJoinedMenu();
+
 
   // === Auto-join stealth (toutes les 15 minutes) ===
   // Intervalle entre passages avec jitter aléatoire (13-17 min par défaut, réglable au menu)
@@ -1148,7 +1134,6 @@
   var AUTO_JOIN_INTERVAL_DEFAULT_MAX = 17;
   var AUTO_JOIN_INTERVAL_LIMIT_MIN = 1;
   var AUTO_JOIN_INTERVAL_LIMIT_MAX = 120;
-  var intervalMenuId = null;
   function getIntervalRangeMinutes() {
     const clamp = (v, d) => (Number.isFinite(v)
       ? Math.max(AUTO_JOIN_INTERVAL_LIMIT_MIN, Math.min(AUTO_JOIN_INTERVAL_LIMIT_MAX, Math.round(v)))
@@ -1168,12 +1153,10 @@
   var AUTO_JOINED_KEY = "autoJoinedCodes";
   var AUTO_JOINED_MAX = 500;
   var autoJoinTimer = null;
-  var autoJoinMenuId = null;
   var isAutoJoinPassInProgress = false; // empêche deux passages simultanés (double join)
 
   // Auto-join limité à la page de liste des giveaways (pas de joins sur profil/discussions…)
   var AUTO_JOIN_LIST_ONLY_KEY = "sgAutoJoinListOnly";
-  var autoJoinListOnlyMenuId = null;
   function isAutoJoinListOnlyEnabled() {
     return true;
   }
@@ -1186,7 +1169,6 @@
   var ACTIVE_HOURS_START = 7;
   var ACTIVE_HOURS_END = 22;
   var ACTIVE_HOURS_KEY = "activeHoursEnabled";
-  var activeHoursMenuId = null;
 
   // Filtres de jeux
   var FILTER_ENABLED_KEY = "sgFilterEnabled";
@@ -1194,12 +1176,10 @@
   var FILTER_EXCLUDE_KEY = "sgFilterExclude";
   var FILTER_GENRES_KEY = "sgFilterGenres";
   var GENRE_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
-  var filterMenuId = null;
 
   // Option : ne joindre que les giveaways qui se terminent dans les 24h
   var ENDING_SOON_KEY = "sgEndingSoonEnabled";
   var ENDING_SOON_WINDOW_MS = 24 * 60 * 60; // en secondes
-  var endingSoonMenuId = null;
   function isEndingSoonEnabled() {
     return GM_getValue(ENDING_SOON_KEY, false);
   }
@@ -1372,7 +1352,6 @@
   var STEAM_API_KEY_KEY = "sgSteamApiKey";
   var STEAM_ID_KEY = "sgSteamId";
   var OWNED_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
-  var ownedMenuId = null;
 
   function isOwnedEnabled() {
     return GM_getValue(OWNED_ENABLED_KEY, false);
@@ -1606,7 +1585,6 @@
     } else {
       stopAutoJoinTimer();
     }
-    registerAutoJoinMenu();
     renderIndicator();
   }
   function toggleSignalFromIndicator() {
@@ -1647,7 +1625,15 @@
       { id: "now",    icon: "\u25B6", defaultLabel: "Lancer un passage maintenant", action: () => runAutoJoin(true) },
       { id: "sim",    icon: "\uD83D\uDD0D", defaultLabel: "Simuler un passage (dry-run)", action: () => runAutoJoin(true, true) },
       { id: "refresh", icon: "\u21BB", defaultLabel: "Rafraîchir bibliothèque + gains", action: refreshSteamCaches },
+      { id: "rhythm", icon: "\u23F1", defaultLabel: "Rythme des passages", action: configureRhythm },
+      { id: "filters", icon: "\u2699", defaultLabel: "Filtres : configurer", action: configureFilters },
+      { id: "owned",  icon: "\uD83C\uDFAE", defaultLabel: "Exclure jeux possédés / gagnés", action: () => {
+        GM_setValue(OWNED_ENABLED_KEY, !isOwnedEnabled());
+      }},
+      { id: "steam",  icon: "\u2699", defaultLabel: "Steam : configurer", action: configureSteam },
       { id: "sound",  icon: "\uD83D\uDD14", defaultLabel: "Son à chaque join", action: toggleSignalFromIndicator },
+      { id: "soundConfig", icon: "\u2699", defaultLabel: "Son : réglages", action: configureSound },
+      { id: "hideJoined", icon: "\uD83D\uDC41", defaultLabel: "Masquer giveaways rejoints", action: toggleHideJoined },
       { id: "compact", icon: "\u25A0", defaultLabel: "Mode compact", action: () => {
         GM_setValue(INDICATOR_COMPACT_KEY, !isIndicatorCompact());
       }}
@@ -1724,6 +1710,12 @@
     }
     if (items.sound) {
       items.sound.labelNode.textContent = "Son à chaque join : " + (isSignalEnabled() ? "ON" : "OFF");
+    }
+    if (items.owned) {
+      items.owned.labelNode.textContent = "Exclure jeux possédés / gagnés : " + (isOwnedEnabled() ? "ON" : "OFF");
+    }
+    if (items.hideJoined) {
+      items.hideJoined.labelNode.textContent = "Masquer giveaways rejoints : " + (GM_getValue(HIDE_JOINED_KEY, false) ? "ON" : "OFF");
     }
     if (items.compact) {
       items.compact.labelNode.textContent = "Mode compact : " + (isIndicatorCompact() ? "ON" : "OFF");
@@ -1861,8 +1853,6 @@
     triangle: { freqs: [523, 784], type: "triangle" }, // clair
     square: { freqs: [660, 990], type: "square" }   // aigu
   };
-  var signalMenuId = null;
-  var soundSettingsMenuId = null;
   var audioCtx = null;
   function isSignalEnabled() {
     return GM_getValue(SIGNAL_ENABLED_KEY, true);
@@ -1936,7 +1926,6 @@
   var DAILY_COUNT_KEY = "sgDailyCount";
   var DAILY_HISTORY_KEY = "sgDailyHistory";
   var DAILY_HISTORY_MAX = 14;
-  var dailyCountMenuId = null;
   function getDailyHistory() {
     const raw = GM_getValue(DAILY_HISTORY_KEY, []);
     return Array.isArray(raw) ? raw : [];
@@ -2200,66 +2189,37 @@
     renderIndicator();
   }
 
-  function registerAutoJoinMenu() {
-    if (autoJoinMenuId) {
-      GM_unregisterMenuCommand(autoJoinMenuId);
-    }
-    const enabled = isAutoJoinEnabled();
-    const caption = enabled ? "☑ Auto-join (15 min)" : "☐ Auto-join (15 min)";
-    autoJoinMenuId = GM_registerMenuCommand(caption, () => {
-      const next = !enabled;
-      setAutoJoinEnabled(next);
-      registerAutoJoinMenu();
-      if (next) {
-        runAutoJoin();
-        startAutoJoinTimer();
-      } else {
-        stopAutoJoinTimer();
-      }
-      renderIndicator();
-    });
-  }
-  registerAutoJoinMenu();
-  GM_registerMenuCommand("Auto-join maintenant", () => runAutoJoin(true));
-  GM_registerMenuCommand("Test : simuler un passage (aucun join)", () => runAutoJoin(true, true));
+
 
   // === Rythme des passages (jitter configurable) ===
-  function registerIntervalMenu() {
-    if (intervalMenuId) {
-      GM_unregisterMenuCommand(intervalMenuId);
-    }
+
+
+
+
+  function configureRhythm() {
     const r = getIntervalRangeMinutes();
-    const caption = "Rythme des passages (" + r.min + "-" + r.max + " min)";
-    intervalMenuId = GM_registerMenuCommand(caption, () => {
-      const current = r.min + " " + r.max;
-      const input = prompt(
-        "Intervalle entre deux passages, en minutes (un délai aléatoire est tiré entre les deux à chaque fois).\nMin 1, max 120. Ex: 13 17 — actuel: " + current + " :",
-        current
-      );
-      if (input === null) return;
-      const parts = String(input).trim().split(/\s+/).map(Number);
-      if (!Number.isFinite(parts[0]) || !Number.isFinite(parts[1])) return;
-      let lo = Math.min(parts[0], parts[1]);
-      let hi = Math.max(parts[0], parts[1]);
-      lo = Math.max(AUTO_JOIN_INTERVAL_LIMIT_MIN, Math.min(AUTO_JOIN_INTERVAL_LIMIT_MAX, Math.round(lo)));
-      hi = Math.max(AUTO_JOIN_INTERVAL_LIMIT_MIN, Math.min(AUTO_JOIN_INTERVAL_LIMIT_MAX, Math.round(hi)));
-      GM_setValue(AUTO_JOIN_INTERVAL_MIN_KEY, lo);
-      GM_setValue(AUTO_JOIN_INTERVAL_MAX_KEY, hi);
-      registerIntervalMenu();
-      // Un passage est déjà planifié : on le reprogramme avec le nouveau rythme
-      if (autoJoinTimer) {
-        window.clearTimeout(autoJoinTimer);
-        autoJoinTimer = null;
-        scheduleNextAutoJoinPass();
-      }
-    });
+    const current = r.min + " " + r.max;
+    const input = prompt(
+      "Intervalle entre deux passages, en minutes (un délai aléatoire est tiré entre les deux à chaque fois).\nMin 1, max 120. Ex: 13 17 — actuel: " + current + " :",
+      current
+    );
+    if (input === null) return;
+    const parts = String(input).trim().split(/\s+/).map(Number);
+    if (!Number.isFinite(parts[0]) || !Number.isFinite(parts[1])) return;
+    let lo = Math.min(parts[0], parts[1]);
+    let hi = Math.max(parts[0], parts[1]);
+    lo = Math.max(AUTO_JOIN_INTERVAL_LIMIT_MIN, Math.min(AUTO_JOIN_INTERVAL_LIMIT_MAX, Math.round(lo)));
+    hi = Math.max(AUTO_JOIN_INTERVAL_LIMIT_MIN, Math.min(AUTO_JOIN_INTERVAL_LIMIT_MAX, Math.round(hi)));
+    GM_setValue(AUTO_JOIN_INTERVAL_MIN_KEY, lo);
+    GM_setValue(AUTO_JOIN_INTERVAL_MAX_KEY, hi);
+    if (autoJoinTimer) {
+      window.clearTimeout(autoJoinTimer);
+      autoJoinTimer = null;
+      scheduleNextAutoJoinPass();
+    }
   }
-  registerIntervalMenu();
 
-
-
-  // Filtres : tout-en-un (mots-clés + genres + ≤ 24h)
-  GM_registerMenuCommand("Filtres : configurer", () => {
+  function configureFilters() {
     const cfg = getFilterConfig();
     const ending = isEndingSoonEnabled();
     const join = (label, vals) => label + ": " + vals.join(", ");
@@ -2290,20 +2250,7 @@
     if (endingStr === "ON" || endingStr === "OFF") {
       GM_setValue(ENDING_SOON_KEY, endingStr === "ON");
     }
-  });
-  // === Exclure les jeux possédés (bibliothèque Steam) ===
-  function registerOwnedMenu() {
-    if (ownedMenuId) {
-      GM_unregisterMenuCommand(ownedMenuId);
-    }
-    const enabled = isOwnedEnabled();
-    const caption = enabled ? "☑ Exclure jeux possédés / gagnés" : "☐ Exclure jeux possédés / gagnés";
-    ownedMenuId = GM_registerMenuCommand(caption, () => {
-      GM_setValue(OWNED_ENABLED_KEY, !enabled);
-      registerOwnedMenu();
-    });
   }
-  registerOwnedMenu();
 
   // Rafraîchit les deux caches (bibliothèque Steam + historique des gains) à la demande
   async function refreshSteamCaches() {
@@ -2318,10 +2265,10 @@
     showAutoJoinToast(0, 0, 0, "SG QuickJoin — vérifications : " + parts.join(" | "));
     renderIndicator();
   }
-  GM_registerMenuCommand("Rafraîchir bibliothèque + gains (Steam)", refreshSteamCaches);
+
 
   // Une seule commande : clé API + SteamID + rechargement immédiat (moins de boutons)
-  GM_registerMenuCommand("Steam: configurer (clé API + ID)", async () => {
+  async function configureSteam() {
     const cfg = getSteamConfig();
     const key = prompt("Clé API Steam (gratuite sur https://steamcommunity.com/dev/apikey) :", cfg.apiKey);
     if (key === null) return;
@@ -2341,11 +2288,11 @@
         showAutoJoinToast(0, 0, 0, "⚠ SG QuickJoin — bibliothèque Steam indisponible");
       }
     }
-  });
+  }
 
   // Son : tout-en-un (ON/OFF + volume + type)
   var SOUND_TYPE_LABELS = { sine: "doux", triangle: "clair", square: "aigu", off: "flash seul" };
-  GM_registerMenuCommand("Son : réglages", () => {
+  function configureSound() {
     const enabled = isSignalEnabled();
     const label = SOUND_TYPE_LABELS[getSoundType()] || "doux";
     const current = (enabled ? "ON" : "OFF") + " | " + getSoundVolume() + " | " + getSoundType();
@@ -2372,9 +2319,7 @@
       GM_setValue(SOUND_TYPE_KEY, t);
     }
     renderIndicator();
-  });
-
-
+  }
 
   function main() {
     fixHeader();

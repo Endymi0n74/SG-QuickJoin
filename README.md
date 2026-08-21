@@ -1,84 +1,95 @@
-# SG QuickJoin (fork personnel)
+# SG Quick Join SE
 
-Userscript Tampermonkey pour [SteamGifts.com](https://www.steamgifts.com) : bouton
-« Join / Leave » sur chaque giveaway + **auto-join discret** entièrement configurable.
+Userscript Tampermonkey pour [SteamGifts.com](https://www.steamgifts.com) :
+auto-join discret avec **indicateur permanent** (haut-droite) pour tout contrôler.
 
 Fork fortement modifié de [HCLonely/SG-QuickJoin](https://github.com/HCLonely/SG-QuickJoin) (MIT).
 
-[![Version](https://img.shields.io/github/v/release/Endymi0n74/SG-QuickJoin?label=version&style=flat-square)](https://github.com/Endymi0n74/SG-QuickJoin/releases/latest)
+[![Version](https://img.shields.io/github/v/release/Endymi0n74/SG-QuickJoin?label=v1.0.0&style=flat-square)](https://github.com/Endymi0n74/SG-QuickJoin/releases/latest)
 [![Installer](https://img.shields.io/badge/Install%20-%20Tampermonkey-4b8bbe?style=flat-square)](https://github.com/Endymi0n74/SG-QuickJoin/releases/latest/download/SG-QuickJoin.user.js)
-[![Licence](https://img.shields.io/github/license/Endymi0n74/SG-QuickJoin?label=licence&style=flat-square)](https://github.com/Endymi0n74/SG-QuickJoin/blob/main/LICENSE)
-[![Changelog](https://img.shields.io/badge/Changelog%20-%20historique-4b8bbe?style=flat-square)](CHANGELOG.md)
+[![Licence](https://img.shields.io/github/license/Endymi0n74/SG-QuickJoin?label=MIT&style=flat-square)](https://github.com/Endymi0n74/SG-QuickJoin/blob/main/LICENSE)
 
 ## Installation
 
 [![Installer avec Tampermonkey](https://img.shields.io/badge/🦎%20Installer%20avec%20Tampermonkey-4b8bbe?style=for-the-badge)](https://github.com/Endymi0n74/SG-QuickJoin/releases/latest/download/SG-QuickJoin.user.js)
 
-1. Clique le bouton ci-dessus (ou télécharge `SG-QuickJoin.user.js`) — Tampermonkey
-   affiche la page d'installation → **Installer → OK**.
-2. Va sur steamgifts.com, ouvre le menu Tampermonkey → **SG QuickJoin**.
+1. Clique le bouton ci-dessus → Tampermonkey affiche la page d'installation → **Installer**.
+2. Va sur [steamgifts.com](https://www.steamgifts.com) : un **petit pill vert** apparaît en haut à droite.
 
-Alternative : ouvre **Tampermonkey → Tableau de bord** et glisse `SG-QuickJoin.user.js`
-dans la fenêtre du navigateur (ou copie-colle le contenu dans un nouveau script et Ctrl+S).
+> **Pas de menu Tampermonkey** — tout se contrôle depuis l'indicateur.
 
-## Mise à jour & auto-update
+## Interface : l'indicateur permanent
 
-- `@updateURL` → `…/releases/latest/download/SG-QuickJoin.meta.js`
-- `@downloadURL` → `…/releases/latest/download/SG-QuickJoin.user.js`
+Un petit pill fixe en haut à droite de chaque page SteamGifts :
 
-Chaque release publie les 2 assets ; Tampermonkey vérifie la `@version` via le `.meta.js`
-et met à jour automatiquement.
+| État | Signification |
+|------|---------------|
+| 🟢 **ON** + ETA | Auto-join actif, prochaine passe estimée |
+| 🟠 **PAUSE** | Auto-join actif mais en attente (hors page liste / hors heures) |
+| ⚪ **OFF** | Auto-join désactivé |
+| 🔵 compteur | Nombre de giveaways rejoints aujourd'hui |
 
-⚠️ **Une seule réinstallation manuelle** : si ton script installé pointe encore vers
-GreasyFork (anciennes URLs `update.greasyfork.org`), réinstalle-le une fois depuis
-cette release pour brancher les nouvelles URLs — ensuite les mises à jour sont automatiques.
+**Clique le pill** pour ouvrir le mini-menu :
 
-## Fonctionnalités principales
+| Action | Description |
+|--------|-------------|
+| ⏻ Auto-join : ON/OFF | Active/désactive l'auto-join |
+| ▶ Lancer un passage maintenant | Passe immédiate (contourne page liste + heures) |
+| 🔍 Simuler un passage | Dry-run : diagnostic sans aucune requête |
+| 🔄 Rafraîchir bibliothèque + gains | Vide les caches Steam (recharge immédiate) |
+| ⏱ Rythme des passages | Configure le délai entre passes (1-120 min) |
+| ⚙ Filtres : configurer | Mots-clés inclure/exclure + genres Steam + ≤ 24h |
+| 🎮 Exclure jeux possédés / gagnés | Toggle ON/OFF |
+| ⚙ Steam : configurer | Clé API + SteamID64 |
+| 🔔 Son à chaque join | Toggle ON/OFF |
+| 🔔 Son : réglages | Volume (0-100) + type (sine/triangle/square/off) |
+| 👁 Masquer giveaways rejoints | Masque les giveaways déjà rejoints sur la page |
+| ⬛ Mode compact | Affiche uniquement le dot (sans texte) |
 
-- **Auto-join stealth** : passages réguliers avec jitter aléatoire (13-17 min par défaut,
-  configurable), délai 2-8 s entre requêtes, pas d'animation à l'écran.
-- **Fenêtre 7h-22h** (heure de Paris) — l'auto-join reste muet hors de cette plage.
-- **Page liste uniquement** : aucun auto-join sur les pages profil/discussions.
-- **Limite journalière** (20/jour par défaut, réglable) : filet de sécurité avec reprise
-  automatique le lendemain.
-- **Filtres** : mots-clés à inclure/exclure + genres Steam (via l'API du store).
-- **Option « uniquement ≤ 24h »** : ne joint que les giveaways qui se terminent bientôt.
-- **Exclusion des jeux possédés / déjà gagnés** :
-  - bibliothèque Steam réelle (clé API + SteamID64 — l'ID est détecté automatiquement),
+## Fonctionnalités
+
+- **Auto-join stealth** : passages réguliers avec jitter aléatoire (13-17 min, configurable),
+  délai 2-8 s entre requêtes, aucun effet visuel sur la page.
+- **Page liste uniquement** : l'auto-join ne tourne que sur `/`, `/giveaways*`.
+- **Fenêtre 7h-22h** (heure de Paris) : l'auto-join reste muet hors de cette plage.
+- **Filtres** : mots-clés à inclure/exclure + genres Steam (API store, cache 7 j) + option ≤ 24h.
+- **Exclusion jeux possédés / gagnés** :
+  - bibliothèque Steam réelle (clé API + SteamID64 auto-détecté),
   - historique des gains SteamGifts (`/giveaways/won`).
-- **Panneau des exclus** (bas droite) : tous les giveaways écartés, groupés par raison,
-  avec lien vers chaque giveaway.
-- **Notification discrète** après chaque passage (rejoints / filtrés / déjà inscrits /
-  total du jour), avec résumé des raisons si 0 rejoint.
-- **Signal son + flash** (volume et type réglables) quand un giveaway est rejoint.
-- **Compteur journalier + historique 7 jours** (graphique ASCII en console).
-- **Mode simulation** (`Test : simuler un passage`) : diagnostic de la page + verdict
-  par giveaway, sans envoyer la moindre requête.
+- **Panneau des exclus** (bas droite) : giveaways écartés, groupés par raison.
+- **Notification discrète** : bilan par passage (rejoints / filtrés / déjà inscrits / aujourd'hui).
+- **Signal son + flash** configurable (volume + type).
+- **Compteur journalier** persistant + historique 7 jours.
 
-## Configuration Steam (optionnelle mais recommandée)
+## Configuration Steam (optionnelle)
 
 1. Clé API gratuite : https://steamcommunity.com/dev/apikey
-2. Menu → `Steam: configurer (clé API + ID)` — le SteamID64 est en général détecté
-   automatiquement depuis la page.
-3. Active `Exclure jeux possédés / gagnés` puis `Rafraîchir bibliothèque + gains (Steam)`
-   pour charger les caches.
+2. Indicateur → ⚙ Steam : configurer → entre ta clé API
+3. Indicateur → 🎮 Exclure jeux possédés → ON
+4. Indicateur → 🔄 Rafraîchir bibliothèque + gains
 
-Sans clé API, l'auto-join fonctionne quand même : l'exclusion des jeux possédés est
-simplement désactivée (un avertissement l'indique dans le toast).
+Le SteamID64 est **détecté automatiquement** depuis la page.
 
 ## Tests
 
 ```bash
-node SG-QuickJoin.test.js   # 121 tests fonctionnels (mocks DOM/GM_*/fetch)
+node SG-QuickJoin.test.js   # 135 tests fonctionnels (mocks DOM/GM_*/fetch)
 ```
+
+## Auto-update
+
+- `@updateURL` → `…/releases/latest/download/SG-QuickJoin.meta.js`
+- `@downloadURL` → `…/releases/latest/download/SG-QuickJoin.user.js`
+
+Chaque release publie les 2 assets ; Tampermonkey vérifie la `@version` et met à jour
+automatiquement.
 
 ## Avertissement
 
 L'auto-join envoie de vraies requêtes à SteamGifts. Utilise-le avec modération
-(délais + jitter + limite journalière sont là pour ça) — à tes risques et périls,
-conformément aux règles du site.
+(délais + jitter + fenêtre horaire sont là pour ça) — à tes risques et périls.
 
 ## Licence
 
 [MIT](LICENSE) — fork de [HCLonely/SG-QuickJoin](https://github.com/HCLonely/SG-QuickJoin)
-(également MIT). Licence intégrale dans le fichier `LICENSE`.
+(également MIT).

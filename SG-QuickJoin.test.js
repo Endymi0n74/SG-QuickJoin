@@ -251,35 +251,31 @@ function runSandbox(testHour, promptAnswers, rows = ROWS, steamAnchors = [], pat
 
 const joinedCodes = (s) => s.posts.filter((p) => p.opts && p.opts.body).map((p) => new URLSearchParams(p.opts.body).get("code")).sort();
 
+// Helper : clic sur un item du mini-menu de l'indicateur
+function clickIndicator(s, itemId) {
+  const ind = s.bodyAppends.find((n) => n.className === "sg-quickjoin-indicator");
+  if (!ind) throw new Error("Indicateur non trouvé");
+  const item = ind._menu._items[itemId];
+  if (!item) throw new Error("Item indicateur non trouvé: " + itemId);
+  item.node.handlers.click({ stopPropagation() {} });
+  return ind;
+}
+
 // ---------- Tests ----------
 (async () => {
-  // 1. Commandes de menu enregistrées (menu simplifié)
+  // 1. Aucune commande TM (tout est dans l'indicateur)
   {
     const s = runSandbox(10);
-    const expected = [
-      "☐ Auto-join (15 min)",
-      "Auto-join maintenant",
-      "Test : simuler un passage (aucun join)",
-      "Rythme des passages (13-17 min)",
-      "☐ Exclure jeux possédés / gagnés",
-      "Rafraîchir bibliothèque + gains (Steam)",
-      "Steam: configurer (clé API + ID)",
-      "Filtres : configurer",
-      "Son : réglages",
-      "☐ 隐藏已加入的 Giveaway"
-    ];
-    const missing = expected.filter((c) => !(c in s.menu));
-    assert(missing.length === 0, "Commandes de menu enregistrées (" + (missing.join(", ") || "toutes présentes") + ")");
-    assert(
-      Object.keys(s.menu).length <= 10,
-      "Menu : " + Object.keys(s.menu).length + " entrées (au lieu de 10)"
-    );
+    assert(Object.keys(s.menu).length === 0, "Menu TM vide (0 entrées)");
+    const ind = s.bodyAppends.find((n) => n.className === "sg-quickjoin-indicator");
+    assert(!!ind, "Indicateur créé");
+    assert(Object.keys(ind._menu._items).length >= 10, "Indicateur a " + Object.keys(ind._menu._items).length + " items");
   }
 
   // 2. À 10h : l'activation de l'auto-join joint tous les giveaways éligibles (4/5)
   {
     const s = runSandbox(10);
-    s.menu["☐ Auto-join (15 min)"]();
+    clickIndicator(s, "toggle");
     await tick();
     assert(
       JSON.stringify(joinedCodes(s)) === JSON.stringify(["aaaaaa", "bbbbbb", "cccccc", "eeeeee"]),
@@ -304,7 +300,7 @@ const joinedCodes = (s) => s.posts.filter((p) => p.opts && p.opts.body).map((p) 
   // 4. À 23h : aucun passage automatique ne joint (fenêtre 7h-22h)
   {
     const s = runSandbox(23);
-    s.menu["☐ Auto-join (15 min)"](); // activation -> passage immédiat ignoré
+    clickIndicator(s, "toggle"); // activation -> passage immédiat ignoré
     await tick();
     s.firstRun(); // timer 5s ignoré
     await tick();
@@ -314,12 +310,12 @@ const joinedCodes = (s) => s.posts.filter((p) => p.opts && p.opts.body).map((p) 
   // 4ter. Page hors liste (profil, discussions…) : aucun passage automatique
   {
     const s = runSandbox(10, [], ROWS, [], "/user/endymion");
-    s.menu["☐ Auto-join (15 min)"](); // activation -> passage immédiat ignoré (page non-liste)
+    clickIndicator(s, "toggle"); // activation -> passage immédiat ignoré (page non-liste)
     await tick();
     assert(s.posts.length === 0, "Page profil : aucun join automatique (0 requête)");
     assert(s.timeouts.filter((t) => t.ms >= 13 * 60 * 1000).length === 0, "Page profil : aucun timer 13-17 min démarré");
     // La commande manuelle, elle, fonctionne toujours (action délibérée)
-    s.menu["Auto-join maintenant"]();
+    clickIndicator(s, "now");
     await tick();
     assert(s.posts.length === 4, "Page profil : la commande manuelle join quand même (4 requêtes)");
   }
@@ -327,7 +323,7 @@ const joinedCodes = (s) => s.posts.filter((p) => p.opts && p.opts.body).map((p) 
   // 4quater. Page de liste (/giveaways/search…) : l'auto-join fonctionne normalement
   {
     const s = runSandbox(10, [], ROWS, [], "/giveaways/search?q=portal");
-    s.menu["☐ Auto-join (15 min)"]();
+    clickIndicator(s, "toggle");
     await tick();
     assert(s.posts.length === 4, "Page /giveaways/search : 4 joins → " + joinedCodes(s).join(","));
   }
@@ -335,7 +331,7 @@ const joinedCodes = (s) => s.posts.filter((p) => p.opts && p.opts.body).map((p) 
   // 4bis. Jitter : l'intervalle suivant est bien aléatoire entre 13 et 17 min
   {
     const s = runSandbox(10);
-    s.menu["☐ Auto-join (15 min)"]();
+    clickIndicator(s, "toggle");
     const delays = s.longIntervals();
     assert(delays.length >= 1, "Un passage 13-17 min est programmé après l'activation");
     assert(
@@ -353,7 +349,7 @@ const joinedCodes = (s) => s.posts.filter((p) => p.opts && p.opts.body).map((p) 
   // 5. Commande manuelle : contourne la fenêtre horaire
   {
     const s = runSandbox(23);
-    s.menu["Auto-join maintenant"]();
+    clickIndicator(s, "now");
     await tick();
     assert(s.posts.length === 4, "À 23h, commande manuelle join quand même (4 requêtes, actuel: " + s.posts.length + " → " + joinedCodes(s).join(",") + ")");
   }
@@ -361,15 +357,15 @@ const joinedCodes = (s) => s.posts.filter((p) => p.opts && p.opts.body).map((p) 
   // 6. Annulation du prompt ne modifie rien
   {
     const s = runSandbox(10, [null]);
-    s.menu["Filtres : configurer"]();
+    clickIndicator(s, "filters");
     assert(!s.store["sgFilterInclude"], "Annulation du prompt ne modifie pas la config");
   }
 
   // 7. Filtre : inclure "portal" -> seul Portal 2
   {
     const s = runSandbox(10, ["filtres: ON | inclure: portal | exclure: | genres: | ≤24h: OFF"]);
-    s.menu["Filtres : configurer"]();
-    s.menu["☐ Auto-join (15 min)"]();
+    clickIndicator(s, "filters");
+    clickIndicator(s, "toggle");
     await tick();
     assert(JSON.stringify(joinedCodes(s)) === JSON.stringify(["aaaaaa"]), "Inclure 'portal' → seul Portal 2 → " + joinedCodes(s).join(","));
     const toast = s.firstToast(); // notification du 1er passage
@@ -382,8 +378,8 @@ const joinedCodes = (s) => s.posts.filter((p) => p.opts && p.opts.body).map((p) 
   // 8. Filtre : exclure "dota" -> Dota 2 écarté
   {
     const s = runSandbox(10, ["filtres: ON | inclure: | exclure: dota | genres: | ≤24h: OFF"]);
-    s.menu["Filtres : configurer"]();
-    s.menu["☐ Auto-join (15 min)"]();
+    clickIndicator(s, "filters");
+    clickIndicator(s, "toggle");
     await tick();
     assert(
       JSON.stringify(joinedCodes(s)) === JSON.stringify(["aaaaaa", "cccccc", "eeeeee"]),
@@ -394,8 +390,8 @@ const joinedCodes = (s) => s.posts.filter((p) => p.opts && p.opts.body).map((p) 
   // 9. Genres : "Puzzle" + inclure "portal" -> seul Portal 2
   {
     const s = runSandbox(10, ["filtres: ON | inclure: portal | exclure: | genres: Puzzle | ≤24h: OFF"]);
-    s.menu["Filtres : configurer"]();
-    s.menu["☐ Auto-join (15 min)"]();
+    clickIndicator(s, "filters");
+    clickIndicator(s, "toggle");
     await tick();
     assert(JSON.stringify(joinedCodes(s)) === JSON.stringify(["aaaaaa"]), "Genres 'Puzzle' + inclure 'portal' → seul Portal 2 → " + joinedCodes(s).join(","));
   }
@@ -403,8 +399,8 @@ const joinedCodes = (s) => s.posts.filter((p) => p.opts && p.opts.body).map((p) 
   // 10. Genres : "Strategy" -> seul Civilization VI (genre inconnu écarté par sécurité)
   {
     const s = runSandbox(10, ["filtres: ON | inclure: | exclure: | genres: Strategy | ≤24h: OFF"]);
-    s.menu["Filtres : configurer"]();
-    s.menu["☐ Auto-join (15 min)"]();
+    clickIndicator(s, "filters");
+    clickIndicator(s, "toggle");
     await tick();
     assert(JSON.stringify(joinedCodes(s)) === JSON.stringify(["cccccc"]), "Genre 'Strategy' → seul Civilization VI (inconnu écarté) → " + joinedCodes(s).join(","));
   }
@@ -412,9 +408,10 @@ const joinedCodes = (s) => s.posts.filter((p) => p.opts && p.opts.body).map((p) 
   // 11. Bibliothèque Steam : jeux possédés exclus (Portal 2 #620 possédé)
   {
     const s = runSandbox(10, ["MYAPIKEY", "76561198000000000"]);
-    s.menu["☐ Exclure jeux possédés / gagnés"]();
-    await s.menu["Steam: configurer (clé API + ID)"]();
-    s.menu["☐ Auto-join (15 min)"]();
+    clickIndicator(s, "owned");
+    clickIndicator(s, "steam");
+    await tick();
+    clickIndicator(s, "toggle");
     await tick();
     assert(
       JSON.stringify(joinedCodes(s)) === JSON.stringify(["bbbbbb", "cccccc", "eeeeee"]),
@@ -438,8 +435,8 @@ const joinedCodes = (s) => s.posts.filter((p) => p.opts && p.opts.body).map((p) 
   // 13. Bibliothèque activée sans config : le passage continue, avec avertissement clair
   {
     const s = runSandbox(10);
-    s.menu["☐ Exclure jeux possédés / gagnés"]();
-    s.menu["☐ Auto-join (15 min)"]();
+    clickIndicator(s, "owned");
+    clickIndicator(s, "toggle");
     await tick();
     assert(
       JSON.stringify(joinedCodes(s)) === JSON.stringify(["aaaaaa", "bbbbbb", "cccccc", "eeeeee"]),
@@ -460,9 +457,10 @@ const joinedCodes = (s) => s.posts.filter((p) => p.opts && p.opts.body).map((p) 
   // 14. Panneau des exclus : dropdown groupant les giveaways possédés
   {
     const s = runSandbox(10, ["MYAPIKEY", "76561198000000000"]);
-    s.menu["☐ Exclure jeux possédés / gagnés"]();
-    await s.menu["Steam: configurer (clé API + ID)"]();
-    s.menu["☐ Auto-join (15 min)"]();
+    clickIndicator(s, "owned");
+    clickIndicator(s, "steam");
+    await tick();
+    clickIndicator(s, "toggle");
     await tick();
     const panel = s.bodyAppends.find((n) => n.className === "sg-quickjoin-owned");
     assert(!!panel, "Panneau des exclus créé dans la page");
@@ -487,8 +485,8 @@ const joinedCodes = (s) => s.posts.filter((p) => p.opts && p.opts.body).map((p) 
   {
     // Filtres : exclure "dota" → Dota 2 listé dans la section Filtres
     const s = runSandbox(10, ["filtres: ON | inclure: | exclure: dota | genres: | ≤24h: OFF"]);
-    s.menu["Filtres : configurer"]();
-    s.menu["☐ Auto-join (15 min)"]();
+    clickIndicator(s, "filters");
+    clickIndicator(s, "toggle");
     await tick();
     const panel = s.bodyAppends.find((n) => n.className === "sg-quickjoin-owned");
     assert(!!panel, "Panneau créé avec les filtres");
@@ -505,8 +503,8 @@ const joinedCodes = (s) => s.posts.filter((p) => p.opts && p.opts.body).map((p) 
       makeRow({ code: "bbbbbb", title: "Dota 2", reqPoints: 0, gameId: "570", endTime: 9999999999 })
     ];
     const s = runSandbox(10, ["filtres: ON | inclure: | exclure: | genres: | ≤24h: ON"], rowsSoon);
-    s.menu["Filtres : configurer"]();
-    s.menu["☐ Auto-join (15 min)"]();
+    clickIndicator(s, "filters");
+    clickIndicator(s, "toggle");
     await tick();
     const panel = s.bodyAppends.find((n) => n.className === "sg-quickjoin-owned");
     assert(!!panel, "Panneau créé avec l'option 24h");
@@ -518,10 +516,10 @@ const joinedCodes = (s) => s.posts.filter((p) => p.opts && p.opts.body).map((p) 
   {
     // Mix : possédé + filtre dans le même panneau (2 sections)
     const s = runSandbox(10, ["MYAPIKEY", "76561198000000000", "filtres: ON | inclure: | exclure: dota | genres: | ≤24h: OFF"]);
-    s.menu["☐ Exclure jeux possédés / gagnés"]();
-    await s.menu["Steam: configurer (clé API + ID)"]();
-    s.menu["Filtres : configurer"]();
-    s.menu["☐ Auto-join (15 min)"]();
+    clickIndicator(s, "owned");
+    await clickIndicator(s, "steam");
+    clickIndicator(s, "filters");
+    clickIndicator(s, "toggle");
     await tick();
     const panel = s.bodyAppends.find((n) => n.className === "sg-quickjoin-owned");
     assert(panel && panel._toggle.textContent === "🚫 2 exclus", "Bouton mixte : '🚫 2 exclus' → " + (panel ? panel._toggle.textContent : "aucun"));
@@ -537,7 +535,7 @@ const joinedCodes = (s) => s.posts.filter((p) => p.opts && p.opts.body).map((p) 
   // 15. Compteur journalier persistant (menu + notification)
   {
     const s = runSandbox(10);
-    s.menu["☐ Auto-join (15 min)"]();
+    clickIndicator(s, "toggle");
     await tick();
     const stored = s.store["sgDailyCount"];
     assert(stored && stored.count === 4, "Compteur journalier = 4 après le passage → " + JSON.stringify(stored));
@@ -566,8 +564,8 @@ const joinedCodes = (s) => s.posts.filter((p) => p.opts && p.opts.body).map((p) 
     ];
     // Avec l'option : seuls ceux ≤ 24h (et fin connue) sont joints
     const s = runSandbox(10, ["filtres: ON | inclure: | exclure: | genres: | ≤24h: ON"], rowsSoon);
-    s.menu["Filtres : configurer"]();
-    s.menu["☐ Auto-join (15 min)"]();
+    clickIndicator(s, "filters");
+    clickIndicator(s, "toggle");
     await tick();
     assert(
       JSON.stringify(joinedCodes(s)) === JSON.stringify(["aaaaaa", "cccccc"]),
@@ -577,7 +575,7 @@ const joinedCodes = (s) => s.posts.filter((p) => p.opts && p.opts.body).map((p) 
     assert(toast && /2 rejoints/.test(toast.textContent) && /2 filtrés/.test(toast.textContent), "Toast : 2 rejoints • 2 filtrés → " + (toast ? toast.textContent : "aucune"));
     // Sans l'option : les 4 sont joints
     const s2 = runSandbox(10, [], rowsSoon);
-    s2.menu["☐ Auto-join (15 min)"]();
+    clickIndicator(s2, "toggle");
     await tick();
     assert(s2.posts.length === 4, "Sans l'option, les 4 giveaways sont joints");
   }
@@ -585,7 +583,7 @@ const joinedCodes = (s) => s.posts.filter((p) => p.opts && p.opts.body).map((p) 
   // 17. Signal (flash) uniquement quand un giveaway a été rejoint
   {
     const s = runSandbox(10);
-    s.menu["☐ Auto-join (15 min)"]();
+    clickIndicator(s, "toggle");
     await tick();
     const toast = s.lastToast();
     assert(toast && toast.classList.contains("sg-quickjoin-toast-signal"), "Passage avec joins → toast signalé (flash)");
@@ -599,8 +597,8 @@ const joinedCodes = (s) => s.posts.filter((p) => p.opts && p.opts.body).map((p) 
     );
     // Signal désactivé : plus de flash même avec des joins
     const s2 = runSandbox(10, ["OFF 40 sine"]);
-    s2.menu["Son : réglages"](); // désactive via le prompt
-    s2.menu["☐ Auto-join (15 min)"]();
+    clickIndicator(s2, "soundConfig"); // désactive via le prompt
+    clickIndicator(s2, "toggle");
     await tick();
     const toast3 = s2.lastToast();
     assert(toast3 && !toast3.classList.contains("sg-quickjoin-toast-signal"), "Signal désactivé → pas de flash malgré les joins");
@@ -609,18 +607,18 @@ const joinedCodes = (s) => s.posts.filter((p) => p.opts && p.opts.body).map((p) 
   // 18. Réglages du son : volume et type configurables via une seule commande
   {
     const s = runSandbox(10, ["ON 60 square"]);
-    assert(typeof s.menu["Son : réglages"] === "function", "Menu : 'Son : réglages'");
-    s.menu["Son : réglages"](); // prompt -> "ON 60 square"
+    // L'indicateur a un item sound
+    clickIndicator(s, "soundConfig"); // prompt -> "ON 60 square"
     assert(s.store["sgSoundVolume"] === 60, "Volume défini à 60 → " + s.store["sgSoundVolume"]);
     assert(s.store["sgSoundType"] === "square", "Type défini à 'square' → " + s.store["sgSoundType"]);
     // Entrée invalide : inchangée
     const s2 = runSandbox(10, ["abc"]);
-    s2.menu["Son : réglages"]();
+    clickIndicator(s2, "soundConfig");
     assert(!s2.store["sgSoundVolume"] || s2.store["sgSoundVolume"] === 40, "Volume invalide ('abc') ignoré");
     // Type 'off' : les joins fonctionnent toujours, flash seul
     const s3 = runSandbox(10, ["ON 40 off"]);
-    s3.menu["Son : réglages"]();
-    s3.menu["☐ Auto-join (15 min)"]();
+    clickIndicator(s3, "soundConfig");
+    clickIndicator(s3, "toggle");
     await tick();
     assert(s3.posts.length === 4, "Type 'off' : les 4 joins fonctionnent normalement");
     const toast = s3.lastToast();
@@ -630,7 +628,7 @@ const joinedCodes = (s) => s.posts.filter((p) => p.opts && p.opts.body).map((p) 
   // 19. Historique 7 jours : enregistrement persistant
   {
     const s = runSandbox(10);
-    s.menu["☐ Auto-join (15 min)"]();
+    clickIndicator(s, "toggle");
     await tick();
     const hist = s.store["sgDailyHistory"];
     assert(hist && hist.length >= 1 && hist[hist.length - 1].count === 4, "Historique enregistré : 4 aujourd'hui → " + JSON.stringify(hist));
@@ -648,7 +646,7 @@ const joinedCodes = (s) => s.posts.filter((p) => p.opts && p.opts.body).map((p) 
       makeRow({ code: "bbbbbb", title: "Dota 2", reqPoints: 0, gameId: "570", faded: true })
     ];
     const s = runSandbox(10, [], rowsAllFaded);
-    s.menu["☐ Auto-join (15 min)"]();
+    clickIndicator(s, "toggle");
     await tick();
     const toast = s.lastToast();
     assert(
@@ -658,7 +656,7 @@ const joinedCodes = (s) => s.posts.filter((p) => p.opts && p.opts.body).map((p) 
 
     // Simulation : 0 requête envoyée, verdicts détaillés en console
     const sSim = runSandbox(10, [], rowsAllFaded);
-    sSim.menu["Test : simuler un passage (aucun join)"]();
+    clickIndicator(sSim, "sim");
     await tick();
     assert(sSim.posts.length === 0, "Simulation : aucune requête envoyée (0 post)");
     const simLines = sSim.consoleLogs.filter((l) => l.includes("🔍 Simulation"));
@@ -675,7 +673,7 @@ const joinedCodes = (s) => s.posts.filter((p) => p.opts && p.opts.body).map((p) 
       makeRow({ code: "bbbbbb", title: "Dota 2", reqPoints: 5000, gameId: "570" })
     ];
     const s2 = runSandbox(10, [], rowsCostly);
-    s2.menu["☐ Auto-join (15 min)"]();
+    clickIndicator(s2, "toggle");
     await tick();
     const toast2 = s2.lastToast();
     assert(
@@ -690,14 +688,14 @@ const joinedCodes = (s) => s.posts.filter((p) => p.opts && p.opts.body).map((p) 
       makeRow({ code: "bbbbbb", title: "Dota 2", reqPoints: 0, gameId: "570", endTime: past })
     ];
     const s3 = runSandbox(10, [], rowsEnded);
-    s3.menu["☐ Auto-join (15 min)"]();
+    clickIndicator(s3, "toggle");
     await tick();
     const toast3 = s3.lastToast();
     assert(toast3 && /2 terminés/.test(toast3.textContent), "0 rejoint : résumé '2 terminés' → " + (toast3 ? toast3.textContent : "aucune"));
 
     // Aucun giveaway sur la page
     const s4 = runSandbox(10, [], []);
-    s4.menu["☐ Auto-join (15 min)"]();
+    clickIndicator(s4, "toggle");
     await tick();
     const toast4 = s4.lastToast();
     assert(
@@ -709,9 +707,9 @@ const joinedCodes = (s) => s.posts.filter((p) => p.opts && p.opts.body).map((p) 
   // 23. Mode simulation avec la bibliothèque Steam : verdicts "possédé"
   {
     const s = runSandbox(10, ["MYAPIKEY", "76561198000000000"]);
-    s.menu["☐ Exclure jeux possédés / gagnés"]();
-    await s.menu["Steam: configurer (clé API + ID)"]();
-    s.menu["Test : simuler un passage (aucun join)"]();
+    clickIndicator(s, "owned");
+    await clickIndicator(s, "steam");
+    clickIndicator(s, "sim");
     await tick();
     assert(s.posts.filter((p) => p.opts && p.opts.body).length === 0, "Simulation (possédés) : 0 requête de join envoyée");
     const sim = s.consoleLogs.filter((l) => l.includes("🔍 Simulation"));
@@ -724,8 +722,8 @@ const joinedCodes = (s) => s.posts.filter((p) => p.opts && p.opts.body).map((p) 
   // 27. Exclure les jeux déjà gagnés (historique SteamGifts /giveaways/won)
   {
     const s = runSandbox(10, [], ROWS, [], "/", [570]); // Dota 2 (#570) déjà gagné
-    s.menu["☐ Exclure jeux possédés / gagnés"]();
-    s.menu["☐ Auto-join (15 min)"]();
+    clickIndicator(s, "owned");
+    clickIndicator(s, "toggle");
     await tick();
     assert(
       JSON.stringify(joinedCodes(s)) === JSON.stringify(["aaaaaa", "cccccc", "eeeeee"]),
@@ -749,8 +747,8 @@ const joinedCodes = (s) => s.posts.filter((p) => p.opts && p.opts.body).map((p) 
   // 28. Diagnostic de simulation : compte des jeux déjà gagnés
   {
     const s = runSandbox(10, [], ROWS, [], "/", [570]);
-    s.menu["☐ Exclure jeux possédés / gagnés"]();
-    s.menu["Test : simuler un passage (aucun join)"]();
+    clickIndicator(s, "owned");
+    clickIndicator(s, "sim");
     await tick();
     const diag = s.consoleLogs.filter((l) => l.includes("🔍 Vérifications"));
     assert(diag.length === 1, "Diagnostic : ligne Vérifications présente → " + diag.length);
@@ -758,7 +756,7 @@ const joinedCodes = (s) => s.posts.filter((p) => p.opts && p.opts.body).map((p) 
     assert(/déjà gagnés: 1 jeu/.test(diag[0]), "Diagnostic : déjà gagnés: 1 jeu → " + diag[0]);
     // Toggle désactivé : les deux vérifications affichent 'désactivé'
     const s2 = runSandbox(10, [], ROWS, [], "/", [570]);
-    s2.menu["Test : simuler un passage (aucun join)"]();
+    clickIndicator(s2, "sim");
     await tick();
     const diag2 = s2.consoleLogs.filter((l) => l.includes("🔍 Vérifications"));
     assert(
@@ -770,11 +768,11 @@ const joinedCodes = (s) => s.posts.filter((p) => p.opts && p.opts.body).map((p) 
   // 25. Rythme des passages configurable depuis le menu
   {
     const s = runSandbox(10, ["5 10"]);
-    assert(typeof s.menu["Rythme des passages (13-17 min)"] === "function", "Menu par défaut : 'Rythme des passages (13-17 min)'");
-    s.menu["Rythme des passages (13-17 min)"](); // prompt -> "5 10"
+    // L'indicateur a un item rhythm
+    clickIndicator(s, "rhythm"); // prompt -> "5 10"
     assert(s.store["sgIntervalMin"] === 5 && s.store["sgIntervalMax"] === 10, "Intervalle réglé à 5-10 min → " + s.store["sgIntervalMin"] + "-" + s.store["sgIntervalMax"]);
-    assert(typeof s.menu["Rythme des passages (5-10 min)"] === "function", "Menu re-régistré : 'Rythme des passages (5-10 min)'");
-    s.menu["☐ Auto-join (15 min)"]();
+    // Le menu TM n'existe plus (tout est dans l'indicateur)
+    clickIndicator(s, "toggle");
     const delays = s.timeouts.filter((x) => x.ms >= 5 * 60 * 1000).map((x) => x.ms);
     assert(
       delays.length >= 1 && delays.every((d) => d >= 5 * 60 * 1000 && d <= 10 * 60 * 1000),
@@ -782,17 +780,17 @@ const joinedCodes = (s) => s.posts.filter((p) => p.opts && p.opts.body).map((p) 
     );
     // Max < min : les valeurs sont échangées
     const s2 = runSandbox(10, ["10 5"]);
-    s2.menu["Rythme des passages (13-17 min)"]();
+    clickIndicator(s2, "rhythm");
     assert(s2.store["sgIntervalMin"] === 5 && s2.store["sgIntervalMax"] === 10, "'10 5' → échangé en 5-10 min");
     // Entrée invalide : ignorée
     const s3 = runSandbox(10, ["abc"]);
-    s3.menu["Rythme des passages (13-17 min)"]();
+    clickIndicator(s3, "rhythm");
     assert(!s3.store["sgIntervalMin"], "Entrée invalide ('abc') ignorée");
     // Changement avec un passage déjà planifié : reprogrammé avec le nouveau rythme
     const s4 = runSandbox(10, ["5 10"]);
-    s4.menu["☐ Auto-join (15 min)"](); // programme un délai 13-17 min
+    clickIndicator(s4, "toggle"); // programme un délai 13-17 min
     const before = s4.timeouts.filter((x) => x.ms >= 5 * 60 * 1000).length;
-    s4.menu["Rythme des passages (13-17 min)"](); // change à 5-10 → reprogramme
+    clickIndicator(s4, "rhythm"); // change à 5-10 → reprogramme
     const after = s4.timeouts.filter((x) => x.ms >= 5 * 60 * 1000).map((x) => x.ms);
     assert(after.length === before + 1, "Changement de rythme reprogramme le passage (" + before + " → " + after.length + " délais)");
     assert(
@@ -818,7 +816,7 @@ const joinedCodes = (s) => s.posts.filter((p) => p.opts && p.opts.body).map((p) 
   // Activation auto-join : l'indicateur passe en ON
   {
     const s = runSandbox(10);
-    s.menu["☐ Auto-join (15 min)"]();
+    clickIndicator(s, "toggle");
     await tick();
     const ind = s.bodyAppends.find((n) => n.className === "sg-quickjoin-indicator");
     assert(ind.classList.contains("is-on"), "Après activation : is-on");
@@ -831,9 +829,9 @@ const joinedCodes = (s) => s.posts.filter((p) => p.opts && p.opts.body).map((p) 
   // Désactivation : retour OFF
   {
     const s = runSandbox(10);
-    s.menu["☐ Auto-join (15 min)"](); // ON → menu re-registre avec ☑
+    clickIndicator(s, "toggle"); // ON
     await tick();
-    s.menu["☑ Auto-join (15 min)"](); // OFF → menu re-registre avec ☐
+    clickIndicator(s, "toggle"); // OFF
     const ind = s.bodyAppends.find((n) => n.className === "sg-quickjoin-indicator");
     assert(ind.classList.contains("is-off"), "Après désactivation : is-off");
     assert(!ind.classList.contains("is-on"), "Plus de is-on après désactivation");
@@ -889,7 +887,7 @@ const joinedCodes = (s) => s.posts.filter((p) => p.opts && p.opts.body).map((p) 
   // Compteur journalier mis à jour après un passage
   {
     const s = runSandbox(10);
-    s.menu["☐ Auto-join (15 min)"]();
+    clickIndicator(s, "toggle");
     await tick();
     const ind = s.bodyAppends.find((n) => n.className === "sg-quickjoin-indicator");
     assert(ind._today.textContent.includes("4"), "Compteur = 4 après le passage → " + ind._today.textContent);
