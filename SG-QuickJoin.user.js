@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name            SG QuickJoin
 // @namespace       https://github.com/HCLonely/SG-QuickJoin
-// @version         1.5.7
+// @version         1.5.8
 // @description     一个基于 Tampermonkey的用户脚本，为 SteamGifts.com上的每个抽奖添加一键"Join / Leave"按钮。
 // @description:en  Adds a 'one-click "Join / Leave"' button to each giveaway on SteamGifts
 // @author          HCLonely
@@ -1158,7 +1158,7 @@
   var AUTO_JOIN_LIST_ONLY_KEY = "sgAutoJoinListOnly";
   var autoJoinListOnlyMenuId = null;
   function isAutoJoinListOnlyEnabled() {
-    return GM_getValue(AUTO_JOIN_LIST_ONLY_KEY, true);
+    return true;
   }
   function isGiveawaysListPage() {
     const path = (location.pathname || "").replace(/\/+$/, "") || "/";
@@ -1205,7 +1205,7 @@
 
   // === Heures actives (Europe/Paris) ===
   function isActiveHoursEnabled() {
-    return GM_getValue(ACTIVE_HOURS_KEY, true);
+    return true;
   }
   function getParisTime() {
     const parts = new Intl.DateTimeFormat("en-GB", {
@@ -1574,7 +1574,6 @@
     if (!isAutoJoinEnabled()) return false; // OFF est son propre état, pas un "pause"
     if (isAutoJoinListOnlyEnabled() && !isGiveawaysListPage()) return true;
     if (isActiveHoursEnabled() && !isWithinActiveHours()) return true;
-    if (getDailyJoinLimit() > 0 && getDailyCount() >= getDailyJoinLimit()) return true;
     return false;
   }
   function toggleAutoJoinFromIndicator() {
@@ -1591,7 +1590,6 @@
   }
   function toggleSignalFromIndicator() {
     GM_setValue(SIGNAL_ENABLED_KEY, !isSignalEnabled());
-    registerSignalMenu();
     renderIndicator();
   }
   function buildIndicator() {
@@ -1959,49 +1957,9 @@
     if (idx >= 0) hist[idx].count = count;
     else hist.push({ date: key, count });
     GM_setValue(DAILY_HISTORY_KEY, hist.length > DAILY_HISTORY_MAX ? hist.slice(-DAILY_HISTORY_MAX) : hist);
-    registerDailyCountMenu();
     return count;
   }
-  function registerDailyCountMenu() {
-    if (dailyCountMenuId) {
-      GM_unregisterMenuCommand(dailyCountMenuId);
-    }
-    const count = getDailyCount();
-    const caption = "📅 " + count + " aujourd'hui — historique 7 jours";
-    dailyCountMenuId = GM_registerMenuCommand(caption, () => {
-      printDailyHistory();
-      showAutoJoinToast(0, 0, 0, "SG QuickJoin — 📅 " + count + " giveaway" + (count > 1 ? "s" : "") + " rejoint" + (count > 1 ? "s" : "") + " aujourd'hui");
-    });
-  }
-  registerDailyCountMenu();
 
-  // === Limite journalière de joins (filet de sécurité) ===
-  var DAILY_JOIN_LIMIT_KEY = "sgDailyJoinLimit";
-  var DAILY_JOIN_LIMIT_DEFAULT = 20;
-  var DAILY_JOIN_LIMIT_MAX = 200;
-  var dailyJoinLimitMenuId = null;
-  function getDailyJoinLimit() {
-    const v = Number(GM_getValue(DAILY_JOIN_LIMIT_KEY, DAILY_JOIN_LIMIT_DEFAULT));
-    return Number.isFinite(v) ? Math.max(0, Math.min(DAILY_JOIN_LIMIT_MAX, Math.round(v))) : DAILY_JOIN_LIMIT_DEFAULT;
-  }
-  function registerDailyJoinLimitMenu() {
-    if (dailyJoinLimitMenuId) {
-      GM_unregisterMenuCommand(dailyJoinLimitMenuId);
-    }
-    const limit = getDailyJoinLimit();
-    const caption = limit > 0 ? "Limite journalière de joins (" + limit + "/jour)" : "Limite journalière de joins (aucune)";
-    dailyJoinLimitMenuId = GM_registerMenuCommand(caption, () => {
-      const current = String(limit);
-      const input = prompt("Nombre max de joins par jour (0 = pas de limite, max " + DAILY_JOIN_LIMIT_MAX + ") :", current);
-      if (input === null) return;
-      const v = Number(String(input).trim());
-      if (Number.isFinite(v)) {
-        GM_setValue(DAILY_JOIN_LIMIT_KEY, Math.max(0, Math.min(DAILY_JOIN_LIMIT_MAX, Math.round(v))));
-        registerDailyJoinLimitMenu();
-      }
-    });
-  }
-  registerDailyJoinLimitMenu();
 
   async function runAutoJoin(manual, dryRun) {
     if (isAutoJoinPassInProgress) return;
@@ -2014,12 +1972,6 @@
     }
     if (!manual && !isWithinActiveHours()) {
       console.info("[SG-QuickJoin] Hors des heures actives (7h-22h), passage ignoré");
-      return;
-    }
-    // Filet de sécurité : arrêt si la limite journalière de joins est atteinte
-    if (!dryRun && getDailyJoinLimit() > 0 && getDailyCount() >= getDailyJoinLimit()) {
-      console.info("[SG-QuickJoin] Limite journalière atteinte (" + getDailyCount() + "/" + getDailyJoinLimit() + "), passage ignoré");
-      showAutoJoinToast(0, 0, 0, "⚠ SG QuickJoin — limite journalière atteinte (" + getDailyCount() + "/" + getDailyJoinLimit() + "), reprise automatique demain");
       return;
     }
     isAutoJoinPassInProgress = true;
@@ -2067,7 +2019,6 @@
       let joinedCount = 0;
       let filteredCount = 0;
       let alreadyCount = 0;
-      let limitHitDuringPass = false;
       const reasonCounts = { ended: 0, insufficient: 0, error: 0 };
       const verdicts = [];
       const recordVerdict = (info, verdict) => {
@@ -2126,11 +2077,7 @@
           trackExcluded(info.code, filterTitle, "filters");
           continue;
         }
-        // Filet de sécurité : arrêt dès que la limite journalière est atteinte
-        if (!dryRun && getDailyJoinLimit() > 0 && getDailyCount() >= getDailyJoinLimit()) {
-          limitHitDuringPass = true;
-          break;
-        }
+
         // Mode simulation : on évalue chaque giveaway sans envoyer la moindre requête
         if (dryRun) {
           if (info.endTime > 0 && Date.now() / 1e3 >= info.endTime) {
@@ -2177,7 +2124,6 @@
         const warnings = [
           ownedCheckWarning,
           wonCheckWarning,
-          limitHitDuringPass ? "⚠ limite journalière atteinte (" + getDailyCount() + "/" + getDailyJoinLimit() + ")" : null,
           zeroJoinReason
         ].filter(Boolean).join(" — ");
         showAutoJoinToast(joinedCount, filteredCount, alreadyCount, null, warnings);
@@ -2189,25 +2135,8 @@
   }
 
   // Programme le prochain passage avec un délai aléatoire dans [min, max] configuré.
-  // Limite journalière atteinte : on ne spamme plus toutes les 15 min, on reprend après minuit.
   function scheduleNextAutoJoinPass() {
     if (autoJoinTimer) return;
-    if (getDailyJoinLimit() > 0 && getDailyCount() >= getDailyJoinLimit()) {
-      const now = new Date();
-      const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 5).getTime();
-      nextAutoJoinAt = midnight; // reprise après minuit
-      autoJoinTimer = window.setTimeout(() => {
-        autoJoinTimer = null;
-        nextAutoJoinAt = null;
-        runAutoJoin(false).finally(() => {
-          if (isAutoJoinEnabled()) {
-            scheduleNextAutoJoinPass();
-          }
-        });
-      }, Math.max(60000, midnight - Date.now()));
-      renderIndicator();
-      return;
-    }
     const { minMs, maxMs } = getIntervalRangeMs();
     const jitterMs = minMs + Math.random() * (maxMs - minMs);
     nextAutoJoinAt = Date.now() + jitterMs;
@@ -2264,21 +2193,7 @@
   }
   registerAutoJoinMenu();
   GM_registerMenuCommand("Auto-join maintenant", () => runAutoJoin(true));
-  // Test : simulation complète, aucune requête envoyée — fonctionne même si l'auto-join est désactivé
   GM_registerMenuCommand("Test : simuler un passage (aucun join)", () => runAutoJoin(true, true));
-  // Option : ne joindre que sur la page de liste des giveaways
-  function registerListOnlyMenu() {
-    if (autoJoinListOnlyMenuId) {
-      GM_unregisterMenuCommand(autoJoinListOnlyMenuId);
-    }
-    const enabled = isAutoJoinListOnlyEnabled();
-    const caption = enabled ? "☑ Auto-join : page liste uniquement" : "☐ Auto-join : page liste uniquement";
-    autoJoinListOnlyMenuId = GM_registerMenuCommand(caption, () => {
-      GM_setValue(AUTO_JOIN_LIST_ONLY_KEY, !enabled);
-      registerListOnlyMenu();
-    });
-  }
-  registerListOnlyMenu();
 
   // === Rythme des passages (jitter configurable) ===
   function registerIntervalMenu() {
@@ -2313,58 +2228,21 @@
   }
   registerIntervalMenu();
 
-  // === Fenêtre horaire 7h-22h (heure FR) ===
-  function registerActiveHoursMenu() {
-    if (activeHoursMenuId) {
-      GM_unregisterMenuCommand(activeHoursMenuId);
-    }
-    const enabled = isActiveHoursEnabled();
-    const caption = enabled ? "☑ Auto-join 7h-22h (heure FR)" : "☐ Auto-join 7h-22h (heure FR)";
-    activeHoursMenuId = GM_registerMenuCommand(caption, () => {
-      GM_setValue(ACTIVE_HOURS_KEY, !enabled);
-      registerActiveHoursMenu();
-    });
-  }
-  registerActiveHoursMenu();
 
-  // === Filtres de jeux ===
-  function registerFilterMenu() {
-    if (filterMenuId) {
-      GM_unregisterMenuCommand(filterMenuId);
-    }
-    const enabled = isFilterEnabled();
-    const caption = enabled ? "☑ Filtres de jeux" : "☐ Filtres de jeux";
-    filterMenuId = GM_registerMenuCommand(caption, () => {
-      GM_setValue(FILTER_ENABLED_KEY, !enabled);
-      registerFilterMenu();
-    });
-  }
-  registerFilterMenu();
 
-  // === Option : uniquement les giveaways ≤ 24h ===
-  function registerEndingSoonMenu() {
-    if (endingSoonMenuId) {
-      GM_unregisterMenuCommand(endingSoonMenuId);
-    }
-    const enabled = isEndingSoonEnabled();
-    const caption = enabled ? "☑ Uniquement giveaways ≤ 24h" : "☐ Uniquement giveaways ≤ 24h";
-    endingSoonMenuId = GM_registerMenuCommand(caption, () => {
-      GM_setValue(ENDING_SOON_KEY, !enabled);
-      registerEndingSoonMenu();
-    });
-  }
-  registerEndingSoonMenu();
-
-  // Une seule commande pour les trois filtres (moins de boutons)
-  GM_registerMenuCommand("Filtres: configurer (mots-clés / genres)", () => {
+  // Filtres : tout-en-un (mots-clés + genres + ≤ 24h)
+  GM_registerMenuCommand("Filtres : configurer", () => {
     const cfg = getFilterConfig();
+    const ending = isEndingSoonEnabled();
     const join = (label, vals) => label + ": " + vals.join(", ");
-    const current = join("inclure", cfg.include) + " | " + join("exclure", cfg.exclude) + " | " + join("genres", cfg.genres);
+    const current = "filtres: " + (isFilterEnabled() ? "ON" : "OFF") + " | " + join("inclure", cfg.include) + " | " + join("exclure", cfg.exclude) + " | " + join("genres", cfg.genres) + " | ≤24h: " + (ending ? "ON" : "OFF");
     const input = prompt(
-      "Filtres de jeux — format : inclure: a, b | exclure: c | genres: Indie, Strategy\n" +
+      "Filtres de jeux — format : filtres: ON/OFF | inclure: a, b | exclure: c | genres: Indie, Strategy | ≤24h: ON/OFF\n" +
+      "  filtres : ON ou OFF (activé/désactivé)\n" +
       "  inclure : le titre doit contenir au moins un de ces mots\n" +
       "  exclure : un seul mot écarte le jeu\n" +
       "  genres  : genres Steam autorisés (le jeu doit en avoir au moins un)\n" +
+      "  ≤24h   : ON = uniquement les giveaways finissant dans 24h\n" +
       "Laisser une partie vide pour la désactiver.",
       current
     );
@@ -2373,9 +2251,17 @@
       const m = String(input).match(new RegExp("(?:^|\\|)\\s*" + label + "\\s*:\\s*([^|]*)", "i"));
       return m ? m[1].trim() : "";
     };
+    const filterStr = parse("filtres").toUpperCase();
+    if (filterStr === "ON" || filterStr === "OFF") {
+      GM_setValue(FILTER_ENABLED_KEY, filterStr === "ON");
+    }
     GM_setValue(FILTER_INCLUDE_KEY, parse("inclure"));
     GM_setValue(FILTER_EXCLUDE_KEY, parse("exclure"));
     GM_setValue(FILTER_GENRES_KEY, parse("genres"));
+    const endingStr = parse("≤24h").toUpperCase();
+    if (endingStr === "ON" || endingStr === "OFF") {
+      GM_setValue(ENDING_SOON_KEY, endingStr === "ON");
+    }
   });
   // === Exclure les jeux possédés (bibliothèque Steam) ===
   function registerOwnedMenu() {
@@ -2429,70 +2315,38 @@
     }
   });
 
-  // === Signal sonore à chaque join ===
-  function registerSignalMenu() {
-    if (signalMenuId) {
-      GM_unregisterMenuCommand(signalMenuId);
-    }
-    const enabled = isSignalEnabled();
-    const caption = enabled ? "☑ Son à chaque join" : "☐ Son à chaque join";
-    signalMenuId = GM_registerMenuCommand(caption, () => {
-      GM_setValue(SIGNAL_ENABLED_KEY, !enabled);
-      registerSignalMenu();
-      renderIndicator();
-    });
-  }
-  registerSignalMenu();
-
-  // Réglages du son (volume + type) en une seule commande, libellé mis à jour
+  // Son : tout-en-un (ON/OFF + volume + type)
   var SOUND_TYPE_LABELS = { sine: "doux", triangle: "clair", square: "aigu", off: "flash seul" };
-  function registerSoundSettingsMenus() {
-    if (soundSettingsMenuId) {
-      GM_unregisterMenuCommand(soundSettingsMenuId);
-    }
+  GM_registerMenuCommand("Son : réglages", () => {
+    const enabled = isSignalEnabled();
     const label = SOUND_TYPE_LABELS[getSoundType()] || "doux";
-    soundSettingsMenuId = GM_registerMenuCommand("Son: réglages (volume " + getSoundVolume() + "% / " + label + ")", () => {
-      const current = getSoundVolume() + " " + getSoundType();
-      const input = prompt(
-        "Volume (0-100) et type (sine = doux, triangle = clair, square = aigu, off = flash seul).\nEx: 40 sine — actuel: " + current + " :",
-        current
-      );
-      if (input === null) return;
-      const parts = String(input).trim().split(/\s+/);
-      const vol = Number(parts[0]);
-      if (Number.isFinite(vol)) {
-        GM_setValue(SOUND_VOLUME_KEY, Math.max(0, Math.min(100, Math.round(vol))));
-      }
-      const t = parts[1] ? parts[1].toLowerCase() : "";
-      if (t === "off" || SOUND_PRESETS[t]) {
-        GM_setValue(SOUND_TYPE_KEY, t);
-      }
-      registerSoundSettingsMenus();
-    });
-  }
-  registerSoundSettingsMenus();
-
-  GM_registerMenuCommand("Afficher la config", () => {
-    const cfg = getSteamConfig();
-    const iv = getIntervalRangeMinutes();
-    console.info("[SG-QuickJoin] Config:", {
-      autoJoin: isAutoJoinEnabled(),
-      listOnly: isAutoJoinListOnlyEnabled(),
-      activeHours: isActiveHoursEnabled(),
-      interval: iv.min + "-" + iv.max + " min",
-      joinLimit: getDailyJoinLimit(),
-      excludeOwnedWon: isOwnedEnabled(),
-      signal: isSignalEnabled(),
-      soundVolume: getSoundVolume(),
-      soundType: getSoundType(),
-      steamApiKey: cfg.apiKey ? cfg.apiKey.slice(0, 6) + "…" : "(vide)",
-      steamId: cfg.steamId || "(vide)",
-      today: getDailyCount(),
-      include: GM_getValue(FILTER_INCLUDE_KEY, ""),
-      exclude: GM_getValue(FILTER_EXCLUDE_KEY, ""),
-      genres: GM_getValue(FILTER_GENRES_KEY, "")
-    });
+    const current = (enabled ? "ON" : "OFF") + " | " + getSoundVolume() + " | " + getSoundType();
+    const input = prompt(
+      "Son à chaque join — format : ON/OFF | volume (0-100) | type\n" +
+      "  ON/OFF : activer ou désactiver le son\n" +
+      "  volume : 0 à 100\n" +
+      "  type   : sine = doux, triangle = clair, square = aigu, off = flash seul\n" +
+      "Ex: ON 40 sine — actuel: " + current + " :",
+      current
+    );
+    if (input === null) return;
+    const parts = String(input).trim().split(/\s+/);
+    const onOff = parts[0] ? parts[0].toUpperCase() : "";
+    if (onOff === "ON" || onOff === "OFF") {
+      GM_setValue(SIGNAL_ENABLED_KEY, onOff === "ON");
+    }
+    const vol = Number(parts[1]);
+    if (Number.isFinite(vol)) {
+      GM_setValue(SOUND_VOLUME_KEY, Math.max(0, Math.min(100, Math.round(vol))));
+    }
+    const t = parts[2] ? parts[2].toLowerCase() : "";
+    if (t === "off" || SOUND_PRESETS[t]) {
+      GM_setValue(SOUND_TYPE_KEY, t);
+    }
+    renderIndicator();
   });
+
+
 
   function main() {
     fixHeader();

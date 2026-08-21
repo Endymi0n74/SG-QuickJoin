@@ -27,10 +27,10 @@
 | `sg-quickjoin/CHANGELOG.md` | Historique des versions (Keep a Changelog) — à mettre à jour à chaque release |
 | `sg-quickjoin/MEMO.md` | Ce mémo |
 
-## 3. Version courante : **1.5.7**
+## 3. Version courante : **1.5.8**
 
-- `node --check SG-QuickJoin.user.js` OK, **121 tests** au vert (`node SG-QuickJoin.test.js`).
-- **Release GitHub** : tag `v1.5.7` + 2 assets (`SG-QuickJoin.user.js` + `SG-QuickJoin.meta.js`).
+- `node --check SG-QuickJoin.user.js` OK, **128 tests** au vert (`node SG-QuickJoin.test.js`).
+- **Release GitHub** : tag `v1.5.8` + 2 assets (`SG-QuickJoin.user.js` + `SG-QuickJoin.meta.js`).
 - **URLs d'update** (depuis v1.5.4) :
   - `@updateURL` → `https://github.com/Endymi0n74/SG-QuickJoin/releases/latest/download/SG-QuickJoin.meta.js`
   - `@downloadURL` → `https://github.com/Endymi0n74/SG-QuickJoin/releases/latest/download/SG-QuickJoin.user.js`
@@ -84,31 +84,27 @@
 - Commandes du script original conservées : bouton Join/Leave, header fixe,
   `☐ 隐藏已加入的 Giveaway` (masquer les déjà inscrits).
 
-## 5. Commandes de menu (18)
+## 5. Commandes de menu (10)
 
 1. `☐/☑ Auto-join (15 min)` — toggle
-2. `Auto-join maintenant` — passage manuel (contourne heures + page liste)
+2. `Auto-join maintenant` — passage manuel
 3. `Test : simuler un passage (aucun join)` — simulation
 4. `Rythme des passages (13-17 min)` — jitter configurable (1-120 min)
-5. `Limite journalière de joins (20/jour)` — filet de sécurité (0 = illimitée)
+5. `☐/☑ Exclure jeux possédés / gagnés`
 6. `Rafraîchir bibliothèque + gains (Steam)` — purge + rechargement des caches
-7. `☐/☑ Auto-join : page liste uniquement`
-8. `☐/☑ Auto-join 7h-22h (heure FR)`
-9. `☐/☑ Filtres de jeux`
-10. `Filtres: configurer (mots-clés / genres)` — format `inclure: a,b | exclure: c | genres: Indie, Strategy`
-11. `☐/☑ Uniquement giveaways ≤ 24h`
-12. `☐/☑ Exclure jeux possédés / gagnés`
-13. `Steam: configurer (clé API + ID)` — recharge la bibliothèque après validation
-14. `☐/☑ Son à chaque join`
-15. `Son: réglages (volume 40% / doux)` — format `40 sine`
-16. `📅 N aujourd'hui — historique 7 jours`
-17. `Afficher la config` — résumé console
-18. `☐/☑ 隐藏已加入的 Giveaway` (original)
+7. `Filtres : configurer` — filtres ON/OFF + inclure/exclure/genres + ≤ 24h
+8. `Steam: configurer (clé API + ID)` — recharge la bibliothèque après validation
+9. `Son : réglages` — ON/OFF + volume + type (sine/triangle/square/off)
+10. `☐/☑ 隐藏已加入的 Giveaway` (original)
+
+Options supprimées (v1.5.8) : limite journalière, page liste uniquement (toujours ON),
+7h-22h (toujours ON), filtres toggle séparé, ≤ 24h toggle séparé, son toggle séparé,
+afficher la config, historique 7 jours.
 
 ## 6. Clés de stockage (GM_setValue)
 
 `autoJoinEnabled`, `sgAutoJoinListOnly`, `activeHoursEnabled`, `sgIntervalMin/Max`,
-`sgDailyJoinLimit`, `sgDailyCount`, `sgDailyHistory`, `sgFilterEnabled/Include/Exclude/Genres`,
+`sgDailyCount`, `sgDailyHistory`, `sgFilterEnabled/Include/Exclude/Genres`,
 `sgEndingSoonEnabled`, `sgOwnedEnabled`, `sgSteamApiKey`, `sgSteamId`, `sgOwnedGames`,
 `sgOwnedFetchedAt`, `sgOwnedSteamId`, `sgWonGames`, `sgWonFetchedAt`,
 `sgSignalEnabled`, `sgSoundVolume`, `sgSoundType`, `autoJoinedCodes` (anti-doublon, max 500),
@@ -131,11 +127,13 @@
 
 ## 8. État actuel
 
-- v1.5.7 prête à publier (local) — release tag `v1.5.7` à créer après commit.
+- v1.5.8 prête à publier (local) — release tag `v1.5.8` à créer après commit.
 - v1.5.5 = lifting visuel du toast de bilan (cartes à chips, ETA, bouton de fermeture).
 - v1.5.6 = lifting visuel du panneau des exclus (rails colorés, badges, slide-in/out).
 - v1.5.7 = indicateur permanent (haut-droite, status pill + mini-menu) + palette
   CSS en custom properties (`--sgq-*`) avec thème clair (`prefers-color-scheme`).
+- v1.5.8 = menu TM réduit (18→10), suppression limite journalière, fusion
+  filtres/son en prompts uniques, page-liste+heures toujours actives.
 - **Page du repo complète** : `README.md` (badges version/install/licence/changelog,
   bouton d'installation, sections auto-update + config Steam), `LICENSE` (MIT, crédit
   original HCLonely), `CHANGELOG.md` (historique 1.1.0 → 1.5.4), `SG-QuickJoin.meta.js`.

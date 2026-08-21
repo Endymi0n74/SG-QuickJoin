@@ -5,6 +5,22 @@ Toutes les modifications notables de **SG QuickJoin** sont documentées ici.
 Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) ;
 le versionnage suit le champ `@version` du header du script.
 
+## [1.5.8] — 2026-08-21
+
+### Supprimé
+- **Limite journalière de joins** (20/jour par défaut) : supprimée pour simplifier
+  le script. Le compteur journalier est conservé pour l'indicateur mais ne bloque
+  plus les passages.
+- **Menus Tampermonkey allégés** : fusion des filtres (toggle + config + ≤ 24h)
+  en une seule commande « ⚙ Filtres : configurer » ; fusion du son (toggle +
+  réglages) en « ⚙ Son : réglages » ; suppression des menus « Afficher la config »
+  et « 📅 historique 7 jours » (l'indicateur les couvre).
+- Options « Auto-join : page liste uniquement » et « Auto-join 7h-22h » rendues
+  permanentes (toujours actives, plus de toggle).
+
+### Changé
+- **Menu Tampermonkey réduit de 18 à 10 entrées** pour une meilleure lisibilité.
+
 ## [1.5.7] — 2026-08-21
 
 ### Ajouté
@@ -175,6 +191,7 @@ le versionnage suit le champ `@version` du header du script.
 - Fork du script [HCLonely/SG-QuickJoin](https://github.com/HCLonely/SG-QuickJoin)
   (MIT) : bouton « Join / Leave » sur chaque giveaway de SteamGifts.
 
+[1.5.8]: https://github.com/Endymi0n74/SG-QuickJoin/releases/tag/v1.5.8
 [1.5.7]: https://github.com/Endymi0n74/SG-QuickJoin/releases/tag/v1.5.7
 [1.5.6]: https://github.com/Endymi0n74/SG-QuickJoin/releases/tag/v1.5.6
 [1.5.5]: https://github.com/Endymi0n74/SG-QuickJoin/releases/tag/v1.5.5
