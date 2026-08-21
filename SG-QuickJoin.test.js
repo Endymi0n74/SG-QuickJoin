@@ -880,6 +880,100 @@ const joinedCodes = (s) => s.posts.filter((p) => p.opts && p.opts.body).map((p) 
     );
   }
 
+  // === Tests indicateur permanent ===
+  // L'indicateur est créé dans body et affiche l'état auto-join
+  {
+    const s = runSandbox(10);
+    const ind = s.bodyAppends.find((n) => n.className === "sg-quickjoin-indicator");
+    assert(!!ind, "Indicateur créé dans la page après chargement");
+    // État par défaut : auto-join OFF
+    assert(ind.classList.contains("is-off"), "État par défaut : is-off");
+    assert(!ind.classList.contains("is-on"), "Pas de is-on par défaut");
+    assert(ind._state.textContent === "OFF", "Texte état par défaut → OFF");
+    // Aujourd'hui = 0 au chargement
+    assert(ind._today.textContent.includes("0"), "Compteur journalier = 0 au chargement → " + ind._today.textContent);
+  }
+
+  // Activation auto-join : l'indicateur passe en ON
+  {
+    const s = runSandbox(10);
+    s.menu["☐ Auto-join (15 min)"]();
+    await tick();
+    const ind = s.bodyAppends.find((n) => n.className === "sg-quickjoin-indicator");
+    assert(ind.classList.contains("is-on"), "Après activation : is-on");
+    assert(!ind.classList.contains("is-off"), "Plus de is-off après activation");
+    assert(ind._state.textContent === "ON", "Texte état → ON");
+    // L'ETA est affichée quand l'auto-join est planifié
+    assert(ind._eta.textContent.length > 0, "ETA affichée après activation → " + ind._eta.textContent);
+  }
+
+  // Désactivation : retour OFF
+  {
+    const s = runSandbox(10);
+    s.menu["☐ Auto-join (15 min)"](); // ON → menu re-registre avec ☑
+    await tick();
+    s.menu["☑ Auto-join (15 min)"](); // OFF → menu re-registre avec ☐
+    const ind = s.bodyAppends.find((n) => n.className === "sg-quickjoin-indicator");
+    assert(ind.classList.contains("is-off"), "Après désactivation : is-off");
+    assert(!ind.classList.contains("is-on"), "Plus de is-on après désactivation");
+    assert(ind._state.textContent === "OFF", "Texte état → OFF après désactivation");
+    assert(ind._eta.textContent === "", "ETA vidée après désactivation");
+  }
+
+  // Ouverture / fermeture du mini-menu
+  {
+    const s = runSandbox(10);
+    const ind = s.bodyAppends.find((n) => n.className === "sg-quickjoin-indicator");
+    assert(!ind._menu.classList.contains("is-open"), "Menu masqué au départ");
+    // Clic sur la barre → menu ouvert
+    ind._bar.handlers.click({ stopPropagation() {} });
+    assert(ind._menu.classList.contains("is-open"), "Menu ouvert après clic sur barre");
+    assert(ind._bar.classList.contains("is-open"), "Barre en état is-open");
+    // 2e clic → fermé
+    ind._bar.handlers.click({ stopPropagation() {} });
+    assert(!ind._menu.classList.contains("is-open"), "Menu fermé après 2e clic");
+  }
+
+  // Toggle auto-join depuis le mini-menu
+  {
+    const s = runSandbox(10);
+    const ind = s.bodyAppends.find((n) => n.className === "sg-quickjoin-indicator");
+    // Le bouton toggle du menu
+    const toggleBtn = ind._menu._items.toggle.node;
+    assert(toggleBtn, "Bouton toggle présent dans le menu");
+    // Le label indique l'état actuel (OFF → clique pour activer)
+    assert(ind._menu._items.toggle.labelNode.textContent.includes("OFF"), "Label toggle → OFF par défaut");
+    // Clic sur toggle → active l'auto-join
+    toggleBtn.handlers.click({ stopPropagation() {} });
+    await tick();
+    assert(s.store["autoJoinEnabled"] === true, "Toggle depuis indicateur → auto-join activé");
+    assert(ind._state.textContent === "ON", "Indicateur passe à ON après toggle");
+    assert(ind._menu._items.toggle.labelNode.textContent.includes("ON"), "Label toggle → ON après activation");
+  }
+
+  // Toggle son depuis le mini-menu
+  {
+    const s = runSandbox(10);
+    const ind = s.bodyAppends.find((n) => n.className === "sg-quickjoin-indicator");
+    // Son ON par défaut
+    assert(s.store["sgSignalEnabled"] === undefined || s.store["sgSignalEnabled"] === true, "Son ON par défaut");
+    assert(ind._menu._items.sound.labelNode.textContent.includes("ON"), "Label son → ON par défaut");
+    // Clic sur sound → désactive
+    const soundBtn = ind._menu._items.sound.node;
+    soundBtn.handlers.click({ stopPropagation() {} });
+    assert(s.store["sgSignalEnabled"] === false, "Toggle son depuis indicateur → son désactivé");
+    assert(ind._menu._items.sound.labelNode.textContent.includes("OFF"), "Label son → OFF après toggle");
+  }
+
+  // Compteur journalier mis à jour après un passage
+  {
+    const s = runSandbox(10);
+    s.menu["☐ Auto-join (15 min)"]();
+    await tick();
+    const ind = s.bodyAppends.find((n) => n.className === "sg-quickjoin-indicator");
+    assert(ind._today.textContent.includes("4"), "Compteur = 4 après le passage → " + ind._today.textContent);
+  }
+
   console.log("\n" + passCount + " tests passés");
   if (process.exitCode) {
     console.error("Des tests ont échoué.");
