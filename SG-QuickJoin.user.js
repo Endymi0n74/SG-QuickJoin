@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name            SG QuickJoin
 // @namespace       https://github.com/HCLonely/SG-QuickJoin
-// @version         1.5.8
+// @version         1.5.9
 // @description     一个基于 Tampermonkey的用户脚本，为 SteamGifts.com上的每个抽奖添加一键"Join / Leave"按钮。
 // @description:en  Adds a 'one-click "Join / Leave"' button to each giveaway on SteamGifts
 // @author          HCLonely
@@ -715,6 +715,23 @@
   .sg-quickjoin-indicator-item[disabled] {
     opacity: 0.4;
     cursor: not-allowed;
+  }
+
+  /* Mode compact : icône seule (dot), pas de texte */
+  .sg-quickjoin-indicator.is-compact .sg-quickjoin-indicator-state,
+  .sg-quickjoin-indicator.is-compact .sg-quickjoin-indicator-eta,
+  .sg-quickjoin-indicator.is-compact .sg-quickjoin-indicator-today {
+    display: none;
+  }
+  .sg-quickjoin-indicator.is-compact .sg-quickjoin-indicator-bar {
+    padding: 6px;
+    gap: 0;
+    border-radius: 50%;
+    min-width: unset;
+  }
+  .sg-quickjoin-indicator.is-compact .sg-quickjoin-indicator-dot {
+    width: 10px;
+    height: 10px;
   }
 
   .sg-quickjoin-toast.sg-quickjoin-toast-signal {
@@ -1568,6 +1585,10 @@
   }
 
   // === Indicateur permanent (haut-droite) : état + ETA + compteur du jour + menu d'actions ===
+  var INDICATOR_COMPACT_KEY = "sgIndicatorCompact";
+  function isIndicatorCompact() {
+    return GM_getValue(INDICATOR_COMPACT_KEY, false);
+  }
   var indicator = null;
   var indicatorMenuOpen = false;
   function isIndicatorPaused() {
@@ -1626,7 +1647,10 @@
       { id: "now",    icon: "\u25B6", defaultLabel: "Lancer un passage maintenant", action: () => runAutoJoin(true) },
       { id: "sim",    icon: "\uD83D\uDD0D", defaultLabel: "Simuler un passage (dry-run)", action: () => runAutoJoin(true, true) },
       { id: "refresh", icon: "\u21BB", defaultLabel: "Rafraîchir bibliothèque + gains", action: refreshSteamCaches },
-      { id: "sound",  icon: "\uD83D\uDD14", defaultLabel: "Son à chaque join", action: toggleSignalFromIndicator }
+      { id: "sound",  icon: "\uD83D\uDD14", defaultLabel: "Son à chaque join", action: toggleSignalFromIndicator },
+      { id: "compact", icon: "\u25A0", defaultLabel: "Mode compact", action: () => {
+        GM_setValue(INDICATOR_COMPACT_KEY, !isIndicatorCompact());
+      }}
     ];
     const itemsById = {};
     for (const it of items) {
@@ -1690,6 +1714,7 @@
     indicator.classList.toggle("is-on", on && !paused);
     indicator.classList.toggle("is-off", !on);
     indicator.classList.toggle("is-paused", on && paused);
+    indicator.classList.toggle("is-compact", isIndicatorCompact());
     indicator._state.textContent = !on ? "OFF" : paused ? "PAUSE" : "ON";
     indicator._eta.textContent = formatNextPassEta() || "";
     indicator._today.textContent = "\uD83D\uDCC5 " + getDailyCount();
@@ -1699,6 +1724,9 @@
     }
     if (items.sound) {
       items.sound.labelNode.textContent = "Son à chaque join : " + (isSignalEnabled() ? "ON" : "OFF");
+    }
+    if (items.compact) {
+      items.compact.labelNode.textContent = "Mode compact : " + (isIndicatorCompact() ? "ON" : "OFF");
     }
   }
   function toggleIndicatorMenu() {

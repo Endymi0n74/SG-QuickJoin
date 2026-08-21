@@ -27,10 +27,10 @@
 | `sg-quickjoin/CHANGELOG.md` | Historique des versions (Keep a Changelog) — à mettre à jour à chaque release |
 | `sg-quickjoin/MEMO.md` | Ce mémo |
 
-## 3. Version courante : **1.5.8**
+## 3. Version courante : **1.5.9**
 
-- `node --check SG-QuickJoin.user.js` OK, **128 tests** au vert (`node SG-QuickJoin.test.js`).
-- **Release GitHub** : tag `v1.5.8` + 2 assets (`SG-QuickJoin.user.js` + `SG-QuickJoin.meta.js`).
+- `node --check SG-QuickJoin.user.js` OK, **137 tests** au vert (`node SG-QuickJoin.test.js`).
+- **Release GitHub** : tag `v1.5.9` + 2 assets (`SG-QuickJoin.user.js` + `SG-QuickJoin.meta.js`).
 - **URLs d'update** (depuis v1.5.4) :
   - `@updateURL` → `https://github.com/Endymi0n74/SG-QuickJoin/releases/latest/download/SG-QuickJoin.meta.js`
   - `@downloadURL` → `https://github.com/Endymi0n74/SG-QuickJoin/releases/latest/download/SG-QuickJoin.user.js`
@@ -134,6 +134,7 @@ afficher la config, historique 7 jours.
   CSS en custom properties (`--sgq-*`) avec thème clair (`prefers-color-scheme`).
 - v1.5.8 = menu TM réduit (18→10), suppression limite journalière, fusion
   filtres/son en prompts uniques, page-liste+heures toujours actives.
+- v1.5.9 = mode compact pour l'indicateur (dot seul, pas de texte).
 - **Page du repo complète** : `README.md` (badges version/install/licence/changelog,
   bouton d'installation, sections auto-update + config Steam), `LICENSE` (MIT, crédit
   original HCLonely), `CHANGELOG.md` (historique 1.1.0 → 1.5.4), `SG-QuickJoin.meta.js`.

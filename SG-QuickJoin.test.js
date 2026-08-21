@@ -895,6 +895,39 @@ const joinedCodes = (s) => s.posts.filter((p) => p.opts && p.opts.body).map((p) 
     assert(ind._today.textContent.includes("4"), "Compteur = 4 après le passage → " + ind._today.textContent);
   }
 
+  // === Mode compact de l'indicateur ===
+  // Par défaut : mode normal (pas compact)
+  {
+    const s = runSandbox(10);
+    const ind = s.bodyAppends.find((n) => n.className === "sg-quickjoin-indicator");
+    assert(!ind.classList.contains("is-compact"), "Pas de is-compact par défaut");
+    assert(ind._menu._items.compact, "Bouton compact présent dans le menu");
+    assert(ind._menu._items.compact.labelNode.textContent.includes("OFF"), "Label compact → OFF par défaut");
+  }
+
+  // Toggle compact ON via le mini-menu
+  {
+    const s = runSandbox(10);
+    const ind = s.bodyAppends.find((n) => n.className === "sg-quickjoin-indicator");
+    ind._menu._items.compact.node.handlers.click({ stopPropagation() {} });
+    assert(s.store["sgIndicatorCompact"] === true, "Compact activé via menu → GM_setValue = true");
+    assert(ind.classList.contains("is-compact"), "Classe is-compact ajoutée");
+    assert(ind._menu._items.compact.labelNode.textContent.includes("ON"), "Label compact → ON après toggle");
+  }
+
+  // Toggle compact OFF
+  {
+    const s = runSandbox(10);
+    const ind = s.bodyAppends.find((n) => n.className === "sg-quickjoin-indicator");
+    // Activer d'abord
+    ind._menu._items.compact.node.handlers.click({ stopPropagation() {} });
+    assert(ind.classList.contains("is-compact"), "is-compact après activation");
+    // Désactiver
+    ind._menu._items.compact.node.handlers.click({ stopPropagation() {} });
+    assert(!ind.classList.contains("is-compact"), "is-compact retiré après désactivation");
+    assert(ind._menu._items.compact.labelNode.textContent.includes("OFF"), "Label compact → OFF après désactivation");
+  }
+
   console.log("\n" + passCount + " tests passés");
   if (process.exitCode) {
     console.error("Des tests ont échoué.");

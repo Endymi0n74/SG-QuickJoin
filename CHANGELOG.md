@@ -5,6 +5,13 @@ Toutes les modifications notables de **SG QuickJoin** sont documentées ici.
 Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) ;
 le versionnage suit le champ `@version` du header du script.
 
+## [1.5.9] — 2026-08-21
+
+### Ajouté
+- **Mode compact pour l'indicateur** : toggle « ⬛ Mode compact » dans le mini-menu
+  de l'indicateur pour afficher uniquement le dot lumineux (sans texte ON/OFF,
+  ETA, compteur). Utile pour un encombrement minimal une fois la config en place.
+
 ## [1.5.8] — 2026-08-21
 
 ### Supprimé
@@ -191,6 +198,7 @@ le versionnage suit le champ `@version` du header du script.
 - Fork du script [HCLonely/SG-QuickJoin](https://github.com/HCLonely/SG-QuickJoin)
   (MIT) : bouton « Join / Leave » sur chaque giveaway de SteamGifts.
 
+[1.5.9]: https://github.com/Endymi0n74/SG-QuickJoin/releases/tag/v1.5.9
 [1.5.8]: https://github.com/Endymi0n74/SG-QuickJoin/releases/tag/v1.5.8
 [1.5.7]: https://github.com/Endymi0n74/SG-QuickJoin/releases/tag/v1.5.7
 [1.5.6]: https://github.com/Endymi0n74/SG-QuickJoin/releases/tag/v1.5.6
