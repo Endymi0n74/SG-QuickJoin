@@ -9,6 +9,8 @@ Fork fortement modifié de [HCLonely/SG-QuickJoin](https://github.com/HCLonely/S
 [![Installer](https://img.shields.io/badge/Install%20-%20Tampermonkey-4b8bbe?style=flat-square)](https://github.com/Endymi0n74/SG-QuickJoin/releases/latest/download/SG-QuickJoin.user.js)
 [![Licence](https://img.shields.io/github/license/Endymi0n74/SG-QuickJoin?label=MIT&style=flat-square)](https://github.com/Endymi0n74/SG-QuickJoin/blob/main/LICENSE)
 
+**🇫🇷 Français** · [🇬🇧 English](README.en.md)
+
 ## Installation
 
 [![Installer avec Tampermonkey](https://img.shields.io/badge/🦎%20Installer%20avec%20Tampermonkey-4b8bbe?style=for-the-badge)](https://github.com/Endymi0n74/SG-QuickJoin/releases/latest/download/SG-QuickJoin.user.js)
